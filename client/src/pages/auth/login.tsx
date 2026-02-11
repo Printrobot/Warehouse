@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +10,14 @@ import { Package, Loader2 } from "lucide-react";
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const { login, isLoggingIn } = useAuth();
+  const { login, isLoggingIn, user } = useAuth();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (user) {
+      setLocation("/");
+    }
+  }, [user, setLocation]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

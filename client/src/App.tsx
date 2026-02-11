@@ -32,9 +32,13 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 }
 
 function Router() {
+  const { user } = useAuth();
+
   return (
     <Switch>
-      <Route path="/login" component={Login} />
+      <Route path="/login">
+        {user ? <Redirect to="/" /> : <Login />}
+      </Route>
       
       {/* Protected Routes */}
       <Route path="/">
