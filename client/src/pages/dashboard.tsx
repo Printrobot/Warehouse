@@ -76,85 +76,83 @@ export default function Dashboard() {
   };
 
   return (
-    <LayoutShell>
-      <div className="max-w-6xl mx-auto space-y-8">
-        <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">
-            Good Morning, {user?.name.split(' ')[0]}
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Select a task to get started. All systems operational.
-          </p>
-        </div>
-
-        {/* Stats Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard label="Boxes In Stock" value={stats?.totalInStock || 0} />
-          <StatCard label="Shipped Today" value={stats?.shippedToday || 0} />
-          <StatCard label="Pending Orders" value={12} /> {/* Mock for now */}
-          <StatCard label="Urgent Alerts" value={2} />   {/* Mock for now */}
-        </div>
-
-        {/* Action Grid */}
-        <motion.div 
-          variants={container}
-          initial="hidden"
-          animate="show"
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-        >
-          <motion.div variants={item} className="md:col-span-2 lg:col-span-1">
-            <DashboardCard
-              title="Box Registration"
-              icon={Package}
-              description="Register new inventory, scan codes, and assign locations."
-              href="/register-box"
-              color="bg-blue-600"
-            />
-          </motion.div>
-
-          <motion.div variants={item}>
-            <DashboardCard
-              title="Material Issue"
-              icon={Box}
-              description="Track material usage and issue items to production."
-              href="/materials"
-              color="bg-emerald-600"
-            />
-          </motion.div>
-
-          <motion.div variants={item}>
-            <DashboardCard
-              title="Find Order"
-              icon={Search}
-              description="Quickly locate boxes or materials by ID or QR code."
-              href="/search"
-              color="bg-purple-600"
-            />
-          </motion.div>
-
-          {user?.role === 'admin' && (
-            <motion.div variants={item}>
-              <DashboardCard
-                title="Management"
-                icon={Truck}
-                description="View analytics, user reports, and shipping manifests."
-                href="/admin"
-                color="bg-slate-700"
-              />
-            </motion.div>
-          )}
-
-           <motion.div variants={item} className="md:col-span-2 lg:col-span-1">
-            <DashboardCard
-              title="History Log"
-              icon={History}
-              description="Review recent transactions and system activities."
-              href="/history"
-              color="bg-orange-600"
-            />
-          </motion.div>
-        </motion.div>
+    <div className="max-w-6xl mx-auto space-y-8">
+      <div>
+        <h1 className="text-3xl font-display font-bold text-foreground">
+          Good Morning, {user?.name.split(' ')[0]}
+        </h1>
+        <p className="text-muted-foreground mt-2">
+          Select a task to get started. All systems operational.
+        </p>
       </div>
-    </LayoutShell>
+
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard label="Boxes In Stock" value={stats?.totalInStock || 0} />
+        <StatCard label="Shipped Today" value={stats?.shippedToday || 0} />
+        <StatCard label="Pending Orders" value={12} /> {/* Mock for now */}
+        <StatCard label="Urgent Alerts" value={2} />   {/* Mock for now */}
+      </div>
+
+      {/* Action Grid */}
+      <motion.div 
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+      >
+        <motion.div variants={item} className="md:col-span-2 lg:col-span-1">
+          <DashboardCard
+            title="Box Registration"
+            icon={Package}
+            description="Register new inventory, scan codes, and assign locations."
+            href="/register-box"
+            color="bg-blue-600"
+          />
+        </motion.div>
+
+        <motion.div variants={item}>
+          <DashboardCard
+            title="Material Issue"
+            icon={Box}
+            description="Track material usage and issue items to production."
+            href="/materials"
+            color="bg-emerald-600"
+          />
+        </motion.div>
+
+        <motion.div variants={item}>
+          <DashboardCard
+            title="Find Order"
+            icon={Search}
+            description="Quickly locate boxes or materials by ID or QR code."
+            href="/search"
+            color="bg-purple-600"
+          />
+        </motion.div>
+
+        {user?.role === 'admin' && (
+          <motion.div variants={item}>
+            <DashboardCard
+              title="Management"
+              icon={Truck}
+              description="View analytics, user reports, and shipping manifests."
+              href="/orders"
+              color="bg-slate-700"
+            />
+          </motion.div>
+        )}
+
+         <motion.div variants={item} className="md:col-span-2 lg:col-span-1">
+          <DashboardCard
+            title="History Log"
+            icon={History}
+            description="Review recent transactions and system activities."
+            href="/history"
+            color="bg-orange-600"
+          />
+        </motion.div>
+      </motion.div>
+    </div>
   );
 }

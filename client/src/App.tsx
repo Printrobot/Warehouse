@@ -11,6 +11,10 @@ import Login from "@/pages/auth/login";
 import Dashboard from "@/pages/dashboard";
 import BoxRegistrationWizard from "@/pages/box-registration/wizard";
 import MaterialsList from "@/pages/materials/list";
+import OrdersList from "@/pages/orders/list";
+import UsersList from "@/pages/users/list";
+import SettingsPage from "@/pages/settings/page";
+import { LayoutShell } from "@/components/layout-shell";
 
 // Protected Route Wrapper
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -28,7 +32,11 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
     return <Redirect to="/login" />;
   }
 
-  return <Component />;
+  return (
+    <LayoutShell>
+      <Component />
+    </LayoutShell>
+  );
 }
 
 function Router() {
@@ -51,6 +59,18 @@ function Router() {
       
       <Route path="/materials">
         <ProtectedRoute component={MaterialsList} />
+      </Route>
+
+      <Route path="/orders">
+        <ProtectedRoute component={OrdersList} />
+      </Route>
+
+      <Route path="/users">
+        <ProtectedRoute component={UsersList} />
+      </Route>
+
+      <Route path="/settings">
+        <ProtectedRoute component={SettingsPage} />
       </Route>
 
       {/* Fallback to 404 */}
