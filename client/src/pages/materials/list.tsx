@@ -1,26 +1,106 @@
-import { LayoutShell } from "@/components/layout-shell";
-import { useMaterials } from "@/hooks/use-warehouse";
+import { useMaterials, useCreateMaterial } from "@/hooks/use-warehouse";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function MaterialsList() {
     const [search, setSearch] = useState("");
     const { data: materials, isLoading } = useMaterials({ search });
+    const createMaterial = useCreateMaterial();
+    const [isAddOpen, setIsAddOpen] = useState(false);
+    
+    const [newMaterial, setNewMaterial] = useState({
+        type: 'raw' as 'raw' | 'client_supplied' | 'tool',
+        description: '',
+        quantity: '',
+        unit: 'sheets',
+        counterparty: '',
+        locationType: 'permanent' as 'permanent' | 'temporary',
+        status: 'in_stock' as 'in_stock'
+    });
+
+    const handleAdd = (e: React.FormEvent) => {
+        e.preventDefault();
+        createMaterial.mutate({
+            ...newMaterial,
+            quantity: parseInt(newMaterial.quantity) || 0,
+            createdBy: 1, // Mock
+        }, {
+            onSuccess: () => {
+                setIsAddOpen(false);
+                setNewMaterial({
+                    type: 'raw',
+                    description: '',
+                    quantity: '',
+                    unit: 'sheets',
+                    counterparty: '',
+                    locationType: 'permanent',
+                    status: 'in_stock'
+                });
+            }
+        });
+    };
 
     return (
-        <LayoutShell>
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div className="space-y-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-display font-bold">Materials Inventory</h1>
                     <p className="text-muted-foreground">Manage raw materials and client-supplied stock.</p>
                 </div>
-                <Button>
-                    <Plus className="w-4 h-4 mr-2" /> Add Material
-                </Button>
+                
+                <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+                    <DialogTrigger asChild>
+                        <Button>
+                            <Plus className="w-4 h-4 mr-2" /> Add Material
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Add New Material</DialogTitle>
+                        </DialogHeader>
+                        <form onSubmit={handleAdd} className="space-y-4 pt-4">
+                            <div className="space-y-2">
+                                <Label>Type</Label>
+                                <Select value={newMaterial.type} onValueChange={(v: any) => setNewMaterial(prev => ({ ...prev, type: v }))}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="raw">Raw Material</SelectItem>
+                                        <SelectItem value="client_supplied">Client Supplied</SelectItem>
+                                        <SelectItem value="tool">Tooling</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Description</Label>
+                                <Input required value={newMaterial.description} onChange={e => setNewMaterial(prev => ({ ...prev, description: e.target.value }))} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Quantity</Label>
+                                    <Input type="number" required value={newMaterial.quantity} onChange={e => setNewMaterial(prev => ({ ...prev, quantity: e.target.value }))} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Unit</Label>
+                                    <Input value={newMaterial.unit} onChange={e => setNewMaterial(prev => ({ ...prev, unit: e.target.value }))} />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Counterparty (Client/Supplier)</Label>
+                                <Input value={newMaterial.counterparty} onChange={e => setNewMaterial(prev => ({ ...prev, counterparty: e.target.value }))} />
+                            </div>
+                            <Button type="submit" className="w-full" disabled={createMaterial.isPending}>
+                                {createMaterial.isPending ? <Loader2 className="animate-spin mr-2" /> : "Save Material"}
+                            </Button>
+                        </form>
+                    </DialogContent>
+                </Dialog>
             </div>
 
             <div className="mb-6">
@@ -69,6 +149,6 @@ export default function MaterialsList() {
                     )}
                 </div>
             )}
-        </LayoutShell>
+        </div>
     );
 }

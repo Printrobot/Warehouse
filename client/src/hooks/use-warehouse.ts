@@ -32,6 +32,30 @@ export function useOrder(id: number) {
   });
 }
 
+export function useCompleteOrder() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const url = buildUrl(api.orders.complete.path, { id });
+      const res = await fetch(url, {
+        method: api.orders.complete.method,
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to complete order");
+      return api.orders.complete.responses[200].parse(await res.json());
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.orders.list.path] });
+      toast({ title: "Success", description: "Order status updated" });
+    },
+    onError: (err) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  });
+}
+
 // === BOXES ===
 export function useCreateBox() {
   const queryClient = useQueryClient();

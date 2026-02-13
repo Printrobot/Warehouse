@@ -3,12 +3,15 @@ import { api } from "@shared/routes";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useCompleteOrder } from "@/hooks/use-warehouse";
 
 export default function OrdersList() {
   const { data: orders, isLoading } = useQuery({
     queryKey: [api.orders.list.path],
   });
+  const completeOrder = useCompleteOrder();
 
   if (isLoading) {
     return (
@@ -21,7 +24,7 @@ export default function OrdersList() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Orders Management</h1>
       </div>
 
       <Card>
@@ -36,6 +39,7 @@ export default function OrdersList() {
                 <TableHead>Customer</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Date</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -49,6 +53,20 @@ export default function OrdersList() {
                     </Badge>
                   </TableCell>
                   <TableCell>{new Date(order.createdAt!).toLocaleDateString()}</TableCell>
+                  <TableCell className="text-right">
+                    {order.status === "active" && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        className="h-8 gap-1.5"
+                        onClick={() => completeOrder.mutate(order.id)}
+                        disabled={completeOrder.isPending}
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Complete
+                      </Button>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

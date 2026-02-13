@@ -14,6 +14,7 @@ import MaterialsList from "@/pages/materials/list";
 import OrdersList from "@/pages/orders/list";
 import UsersList from "@/pages/users/list";
 import SettingsPage from "@/pages/settings/page";
+import AuditLog from "@/pages/audit-log";
 import { LayoutShell } from "@/components/layout-shell";
 
 // Protected Route Wrapper
@@ -71,6 +72,14 @@ function Router() {
 
       <Route path="/settings">
         <ProtectedRoute component={SettingsPage} />
+      </Route>
+
+      <Route path="/history">
+        <ProtectedRoute component={AuditLog} />
+      </Route>
+
+      <Route path="/search">
+        <ProtectedRoute component={OrdersList} />
       </Route>
 
       {/* Fallback to 404 */}

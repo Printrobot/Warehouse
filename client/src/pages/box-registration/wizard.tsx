@@ -34,10 +34,12 @@ export default function BoxRegistrationWizard() {
   const [, setLocation] = useLocation();
   const createBox = useCreateBox();
   const { data: orders } = useOrders({ status: 'active' });
+  const { data: locations } = useLocations();
 
   // Form State
   const [formData, setFormData] = useState({
     orderId: "",
+    manualOrderNumber: "",
     numberInOrder: "", // e.g., "1/5"
     quantity: "",
     productPhotos: [] as string[],
@@ -51,6 +53,11 @@ export default function BoxRegistrationWizard() {
 
   // Location Query logic (only runs when locationUuid is set)
   const { data: scannedLocation } = useLocationByQr(formData.locationUuid || null);
+
+  // Effective location selection
+  const selectedLocation = formData.locationId 
+    ? locations?.find(l => l.id === formData.locationId)
+    : scannedLocation;
 
   const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, Step.REVIEW));
   const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, Step.ORDER_SELECT));
@@ -66,7 +73,7 @@ export default function BoxRegistrationWizard() {
       updateField("orderId", found.id.toString());
       // Auto-advance if found
     } else {
-        alert("Order not found or invalid QR");
+        alert("Order not found or invalid QR. Try manual selection or entry.");
     }
   };
 
@@ -77,7 +84,7 @@ export default function BoxRegistrationWizard() {
       numberInOrder: formData.numberInOrder,
       quantity: parseInt(formData.quantity),
       locationType: formData.locationType,
-      locationId: scannedLocation?.id, // Use the ID from the fetched location
+      locationId: selectedLocation?.id, // Use the ID from the fetched/selected location
       tempLocationDesc: formData.tempLocationDesc,
       tempLocationPhoto: formData.tempLocationPhoto,
       status: 'in_stock' as const,
@@ -110,29 +117,47 @@ export default function BoxRegistrationWizard() {
                 <QrScanner onScan={handleScanOrder} label="Scan Order Sheet" />
               </Card>
 
-              <Card className="p-6 space-y-4 flex flex-col justify-center">
-                <h3 className="font-semibold text-lg">Manual Selection</h3>
-                <div className="space-y-2">
-                  <Label>Select Active Order</Label>
-                  <Select 
-                    value={formData.orderId} 
-                    onValueChange={(val) => updateField("orderId", val)}
-                  >
-                    <SelectTrigger className="h-12">
-                      <SelectValue placeholder="Choose order..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {orders?.map((o) => (
-                        <SelectItem key={o.id} value={o.id.toString()}>
-                          {o.number} - {o.customer}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <Card className="p-6 space-y-4">
+                <h3 className="font-semibold text-lg">Manual Entry</h3>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Select Existing Order</Label>
+                    <Select 
+                      value={formData.orderId} 
+                      onValueChange={(val) => updateField("orderId", val)}
+                    >
+                      <SelectTrigger className="h-12">
+                        <SelectValue placeholder="Choose order..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {orders?.map((o) => (
+                          <SelectItem key={o.id} value={o.id.toString()}>
+                            {o.number} - {o.customer}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+                    <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">Or</span></div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Type Order Number Manually</Label>
+                    <Input 
+                      placeholder="e.g. ORD-1234" 
+                      className="h-12"
+                      value={formData.manualOrderNumber}
+                      onChange={(e) => updateField("manualOrderNumber", e.target.value)}
+                    />
+                  </div>
                 </div>
-                {formData.orderId && (
+
+                {(formData.orderId || formData.manualOrderNumber) && (
                     <div className="p-4 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-lg flex items-center gap-2">
-                        <Check className="w-4 h-4" /> Order Selected
+                        <Check className="w-4 h-4" /> Order Identified
                     </div>
                 )}
               </Card>
@@ -249,13 +274,44 @@ export default function BoxRegistrationWizard() {
                     <Card className="p-6">
                          <h3 className="font-semibold mb-4">Scan Rack QR Code</h3>
                          <QrScanner 
-                            onScan={(data) => updateField("locationUuid", data)}
+                            onScan={(data) => {
+                                updateField("locationUuid", data);
+                                updateField("locationId", undefined);
+                            }}
                             label="Scan Shelf QR"
                          />
-                         {scannedLocation && (
+                         
+                         <div className="my-6 relative">
+                            <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+                            <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">Or select from list</span></div>
+                         </div>
+
+                         <div className="space-y-2">
+                            <Label>Select Location</Label>
+                            <Select 
+                                value={formData.locationId?.toString()} 
+                                onValueChange={(val) => {
+                                    updateField("locationId", parseInt(val));
+                                    updateField("locationUuid", "");
+                                }}
+                            >
+                                <SelectTrigger className="h-12">
+                                    <SelectValue placeholder="Choose location..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {locations?.map((l) => (
+                                        <SelectItem key={l.id} value={l.id.toString()}>
+                                            {l.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                         </div>
+
+                         {selectedLocation && (
                              <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                                 <p className="font-semibold text-blue-900 dark:text-blue-100">Location Identified:</p>
-                                 <p className="text-lg">{scannedLocation.name}</p>
+                                 <p className="font-semibold text-blue-900 dark:text-blue-100">Location Selected:</p>
+                                 <p className="text-lg">{selectedLocation.name}</p>
                              </div>
                          )}
                     </Card>
@@ -290,7 +346,11 @@ export default function BoxRegistrationWizard() {
                  <div className="grid grid-cols-2 gap-4 text-sm">
                      <div>
                          <span className="text-muted-foreground">Order:</span>
-                         <p className="font-semibold">{orders?.find(o => o.id.toString() === formData.orderId)?.number || "Unknown"}</p>
+                         <p className="font-semibold">
+                            {formData.orderId 
+                                ? orders?.find(o => o.id.toString() === formData.orderId)?.number 
+                                : formData.manualOrderNumber || "Manual Entry"}
+                         </p>
                      </div>
                      <div>
                          <span className="text-muted-foreground">Box:</span>
@@ -303,7 +363,7 @@ export default function BoxRegistrationWizard() {
                      <div>
                          <span className="text-muted-foreground">Location:</span>
                          <p className="font-semibold">
-                             {formData.locationType === 'permanent' ? scannedLocation?.name : "Temporary Area"}
+                             {formData.locationType === 'permanent' ? selectedLocation?.name : "Temporary Area"}
                          </p>
                      </div>
                  </div>
@@ -327,19 +387,18 @@ export default function BoxRegistrationWizard() {
   // Validations per step
   const canAdvance = () => {
       switch(currentStep) {
-          case Step.ORDER_SELECT: return !!formData.orderId;
+          case Step.ORDER_SELECT: return !!formData.orderId || !!formData.manualOrderNumber;
           case Step.PRODUCT_PHOTOS: return formData.productPhotos.length > 0;
           case Step.STICKER_DETAILS: return !!formData.numberInOrder && !!formData.quantity;
           case Step.LOCATION_SELECT: 
-            if (formData.locationType === 'permanent') return !!scannedLocation;
+            if (formData.locationType === 'permanent') return !!selectedLocation;
             return !!formData.tempLocationDesc;
           default: return true;
       }
   };
 
   return (
-    <LayoutShell>
-        <div className="max-w-2xl mx-auto pb-20">
+    <div className="max-w-2xl mx-auto pb-20">
             {/* Progress Bar */}
             <div className="mb-8">
                 <div className="flex justify-between mb-2">
@@ -406,6 +465,5 @@ export default function BoxRegistrationWizard() {
                 )}
             </div>
         </div>
-    </LayoutShell>
   );
 }
