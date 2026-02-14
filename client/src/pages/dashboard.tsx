@@ -1,4 +1,3 @@
-import { LayoutShell } from "@/components/layout-shell";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";

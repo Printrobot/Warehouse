@@ -44,6 +44,7 @@ export const orders = pgTable("orders", {
 export const boxes = pgTable("boxes", {
   id: serial("id").primaryKey(),
   orderId: integer("order_id").references(() => orders.id),
+  manualOrderNumber: text("manual_order_number"), // Added for manual entry
   numberInOrder: text("number_in_order").notNull(), // e.g., "3/8"
   quantity: integer("quantity").notNull(),
   

@@ -8,7 +8,8 @@ import {
   Package, 
   Settings, 
   Truck, 
-  Users 
+  Users,
+  History 
 } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -30,10 +31,11 @@ export function LayoutShell({ children }: LayoutShellProps) {
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Box Registration", href: "/register-box", icon: Package },
     { name: "Materials", href: "/materials", icon: Box },
+    { name: "Orders", href: "/orders", icon: Truck },
     ...(isAdmin ? [
-      { name: "Orders", href: "/orders", icon: Truck },
       { name: "Users", href: "/users", icon: Users },
       { name: "Settings", href: "/settings", icon: Settings },
+      { name: "History", href: "/history", icon: History },
     ] : []),
   ];
 

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { LayoutShell } from "@/components/layout-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CameraCapture } from "@/components/camera-capture";
 import { QrScanner } from "@/components/qr-scanner";
-import { useCreateBox, useLocationByQr, useOrders } from "@/hooks/use-warehouse";
+import { useCreateBox, useLocationByQr, useOrders, useLocations } from "@/hooks/use-warehouse";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, ChevronRight, Loader2, Package, QrCode } from "lucide-react";
 import { useLocation } from "wouter";
@@ -81,6 +80,7 @@ export default function BoxRegistrationWizard() {
     // Prepare payload
     const payload = {
       orderId: formData.orderId ? parseInt(formData.orderId) : null,
+      manualOrderNumber: formData.orderId ? null : formData.manualOrderNumber, // Add this if schema supports it
       numberInOrder: formData.numberInOrder,
       quantity: parseInt(formData.quantity),
       locationType: formData.locationType,
@@ -124,7 +124,10 @@ export default function BoxRegistrationWizard() {
                     <Label>Select Existing Order</Label>
                     <Select 
                       value={formData.orderId} 
-                      onValueChange={(val) => updateField("orderId", val)}
+                      onValueChange={(val) => {
+                        updateField("orderId", val);
+                        updateField("manualOrderNumber", "");
+                      }}
                     >
                       <SelectTrigger className="h-12">
                         <SelectValue placeholder="Choose order..." />
@@ -150,7 +153,10 @@ export default function BoxRegistrationWizard() {
                       placeholder="e.g. ORD-1234" 
                       className="h-12"
                       value={formData.manualOrderNumber}
-                      onChange={(e) => updateField("manualOrderNumber", e.target.value)}
+                      onChange={(e) => {
+                        updateField("manualOrderNumber", e.target.value);
+                        updateField("orderId", "");
+                      }}
                     />
                   </div>
                 </div>
