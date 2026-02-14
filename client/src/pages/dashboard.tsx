@@ -4,6 +4,7 @@ import { Link } from "wouter";
 import { Box, Package, Truck, Search, History } from "lucide-react";
 import { motion } from "framer-motion";
 import { useBoxStats } from "@/hooks/use-warehouse";
+import { useLanguage } from "@/hooks/use-language";
 
 function DashboardCard({ 
   title, 
@@ -58,6 +59,7 @@ function StatCard({ label, value }: { label: string; value: number }) {
 export default function Dashboard() {
   const { user } = useAuth();
   const { data: stats } = useBoxStats();
+  const { t } = useLanguage();
 
   const container = {
     hidden: { opacity: 0 },
@@ -78,19 +80,19 @@ export default function Dashboard() {
     <div className="max-w-6xl mx-auto space-y-8">
       <div>
         <h1 className="text-3xl font-display font-bold text-foreground">
-          Good Morning, {user?.name.split(' ')[0]}
+          {t("dashboard.welcome")}, {user?.name.split(' ')[0]}
         </h1>
         <p className="text-muted-foreground mt-2">
-          Select a task to get started. All systems operational.
+          {t("dashboard.select_task")}
         </p>
       </div>
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Boxes In Stock" value={stats?.totalInStock || 0} />
-        <StatCard label="Shipped Today" value={stats?.shippedToday || 0} />
-        <StatCard label="Pending Orders" value={12} /> {/* Mock for now */}
-        <StatCard label="Urgent Alerts" value={2} />   {/* Mock for now */}
+        <StatCard label={t("dashboard.stats.boxes")} value={stats?.totalInStock || 0} />
+        <StatCard label={t("dashboard.stats.shipped")} value={stats?.shippedToday || 0} />
+        <StatCard label={t("dashboard.stats.pending")} value={12} /> {/* Mock for now */}
+        <StatCard label={t("dashboard.stats.urgent")} value={2} />   {/* Mock for now */}
       </div>
 
       {/* Action Grid */}
@@ -102,9 +104,9 @@ export default function Dashboard() {
       >
         <motion.div variants={item} className="md:col-span-2 lg:col-span-1">
           <DashboardCard
-            title="Box Registration"
+            title={t("dashboard.reg.title")}
             icon={Package}
-            description="Register new inventory, scan codes, and assign locations."
+            description={t("dashboard.reg.desc")}
             href="/register-box"
             color="bg-blue-600"
           />
@@ -112,9 +114,9 @@ export default function Dashboard() {
 
         <motion.div variants={item}>
           <DashboardCard
-            title="Material Issue"
+            title={t("dashboard.issue.title")}
             icon={Box}
-            description="Track material usage and issue items to production."
+            description={t("dashboard.issue.desc")}
             href="/materials"
             color="bg-emerald-600"
           />
@@ -122,9 +124,9 @@ export default function Dashboard() {
 
         <motion.div variants={item}>
           <DashboardCard
-            title="Find Order"
+            title={t("dashboard.find.title")}
             icon={Search}
-            description="Quickly locate boxes or materials by ID or QR code."
+            description={t("dashboard.find.desc")}
             href="/search"
             color="bg-purple-600"
           />
@@ -133,9 +135,9 @@ export default function Dashboard() {
         {user?.role === 'admin' && (
           <motion.div variants={item}>
             <DashboardCard
-              title="Management"
+              title={t("dashboard.mgmt.title")}
               icon={Truck}
-              description="View analytics, user reports, and shipping manifests."
+              description={t("dashboard.mgmt.desc")}
               href="/orders"
               color="bg-slate-700"
             />
@@ -144,9 +146,9 @@ export default function Dashboard() {
 
          <motion.div variants={item} className="md:col-span-2 lg:col-span-1">
           <DashboardCard
-            title="History Log"
+            title={t("dashboard.history.title")}
             icon={History}
-            description="Review recent transactions and system activities."
+            description={t("dashboard.history.desc")}
             href="/history"
             color="bg-orange-600"
           />

@@ -15,6 +15,7 @@ import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/hooks/use-language";
 
 interface LayoutShellProps {
   children: React.ReactNode;
@@ -24,18 +25,19 @@ export function LayoutShell({ children }: LayoutShellProps) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [location] = useLocation();
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
 
   const isAdmin = user?.role === "admin";
 
   const navigation = [
-    { name: "Dashboard", href: "/", icon: LayoutDashboard },
-    { name: "Box Registration", href: "/register-box", icon: Package },
-    { name: "Materials", href: "/materials", icon: Box },
-    { name: "Orders", href: "/orders", icon: Truck },
+    { name: t("nav.dashboard"), href: "/", icon: LayoutDashboard },
+    { name: t("nav.register_box"), href: "/register-box", icon: Package },
+    { name: t("nav.materials"), href: "/materials", icon: Box },
+    { name: t("nav.orders"), href: "/orders", icon: Truck },
     ...(isAdmin ? [
-      { name: "Users", href: "/users", icon: Users },
-      { name: "Settings", href: "/settings", icon: Settings },
-      { name: "History", href: "/history", icon: History },
+      { name: t("nav.users"), href: "/users", icon: Users },
+      { name: t("nav.settings"), href: "/settings", icon: Settings },
+      { name: t("nav.history"), href: "/history", icon: History },
     ] : []),
   ];
 
