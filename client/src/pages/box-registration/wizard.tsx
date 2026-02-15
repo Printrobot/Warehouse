@@ -11,6 +11,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, ChevronRight, Loader2, Package, QrCode } from "lucide-react";
 import { useLocation } from "wouter";
 
+import { useLanguage } from "@/hooks/use-language";
+
 // Steps Enum
 enum Step {
   ORDER_SELECT = 0,
@@ -34,6 +36,7 @@ export default function BoxRegistrationWizard() {
   const createBox = useCreateBox();
   const { data: orders } = useOrders({ status: 'active' });
   const { data: locations } = useLocations();
+  const { t } = useLanguage();
 
   // Form State
   const [formData, setFormData] = useState({
@@ -126,13 +129,14 @@ export default function BoxRegistrationWizard() {
                       value={formData.orderId} 
                       onValueChange={(val) => {
                         updateField("orderId", val);
-                        updateField("manualOrderNumber", "");
+                        const foundOrder = orders?.find(o => o.id.toString() === val);
+                        updateField("manualOrderNumber", foundOrder ? foundOrder.number : "");
                       }}
                     >
                       <SelectTrigger className="h-12">
                         <SelectValue placeholder="Choose order..." />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white dark:bg-slate-900 border shadow-md">
                         {orders?.map((o) => (
                           <SelectItem key={o.id} value={o.id.toString()}>
                             {o.number} - {o.customer}
@@ -445,19 +449,27 @@ export default function BoxRegistrationWizard() {
                 <Button 
                     variant="ghost" 
                     onClick={prevStep} 
-                    disabled={currentStep === 0}
+                    disabled={currentStep === 0 || currentStep === Step.REVIEW}
                 >
-                    Back
+                    {t("common.back")}
                 </Button>
 
-                {currentStep === Step.REVIEW ? (
+                {currentStep === Step.LOCATION_SELECT ? (
                     <Button 
                         size="lg" 
                         onClick={handleSubmit} 
                         className="bg-green-600 hover:bg-green-700 w-40"
-                        disabled={createBox.isPending}
+                        disabled={!canAdvance() || createBox.isPending}
                     >
-                        {createBox.isPending ? <Loader2 className="animate-spin" /> : "Submit"}
+                        {createBox.isPending ? <Loader2 className="animate-spin" /> : t("common.submit")}
+                    </Button>
+                ) : currentStep === Step.REVIEW ? (
+                    <Button 
+                        size="lg" 
+                        onClick={() => setLocation("/")} 
+                        className="w-40"
+                    >
+                        Done
                     </Button>
                 ) : (
                     <Button 
@@ -466,7 +478,7 @@ export default function BoxRegistrationWizard() {
                         disabled={!canAdvance()}
                         className="w-32"
                     >
-                        Next <ChevronRight className="w-4 h-4 ml-1" />
+                        {t("common.next")} <ChevronRight className="w-4 h-4 ml-1" />
                     </Button>
                 )}
             </div>
