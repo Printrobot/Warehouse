@@ -13,7 +13,8 @@ export function useOrders(params?: { status?: 'active' | 'completed'; search?: s
       
       const res = await fetch(url.toString(), { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch orders");
-      return api.orders.list.responses[200].parse(await res.json());
+      const json = await res.json();
+      return api.orders.list.responses[200].parse(json);
     },
   });
 }
@@ -26,7 +27,8 @@ export function useOrder(id: number) {
       const res = await fetch(url, { credentials: "include" });
       if (res.status === 404) throw new Error("Order not found");
       if (!res.ok) throw new Error("Failed to fetch order");
-      return api.orders.get.responses[200].parse(await res.json());
+      const json = await res.json();
+      return api.orders.get.responses[200].parse(json);
     },
     enabled: !!id,
   });
@@ -44,7 +46,8 @@ export function useCompleteOrder() {
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to complete order");
-      return api.orders.complete.responses[200].parse(await res.json());
+      const json = await res.json();
+      return api.orders.complete.responses[200].parse(json);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.orders.list.path] });
@@ -63,7 +66,8 @@ export function useBoxes() {
     queryFn: async () => {
       const res = await fetch(api.boxes.list.path, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch boxes");
-      return api.boxes.list.responses[200].parse(await res.json());
+      const json = await res.json();
+      return api.boxes.list.responses[200].parse(json);
     }
   });
 }
@@ -80,7 +84,8 @@ export function useShipBox() {
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to ship box");
-      return api.boxes.ship.responses[200].parse(await res.json());
+      const json = await res.json();
+      return api.boxes.ship.responses[200].parse(json);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.boxes.list.path] });
@@ -106,11 +111,11 @@ export function useCreateBox() {
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to create box");
-      return api.boxes.create.responses[201].parse(await res.json());
+      const json = await res.json();
+      return api.boxes.create.responses[201].parse(json);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.orders.list.path] });
-      // Invalidate specific order query if we knew the ID, but global invalidation is safer for now
       queryClient.invalidateQueries({ queryKey: [api.orders.get.path] }); 
       toast({ title: "Success", description: "Box registered successfully" });
     },
@@ -126,7 +131,8 @@ export function useBoxStats() {
         queryFn: async () => {
             const res = await fetch(api.boxes.stats.path, { credentials: "include" });
             if (!res.ok) throw new Error("Failed to fetch stats");
-            return api.boxes.stats.responses[200].parse(await res.json());
+            const json = await res.json();
+            return api.boxes.stats.responses[200].parse(json);
         }
     });
 }
@@ -138,7 +144,8 @@ export function useLocations() {
         queryFn: async () => {
             const res = await fetch(api.locations.list.path, { credentials: "include" });
             if (!res.ok) throw new Error("Failed to fetch locations");
-            return api.locations.list.responses[200].parse(await res.json());
+            const json = await res.json();
+            return api.locations.list.responses[200].parse(json);
         }
     });
 }
@@ -152,7 +159,8 @@ export function useLocationByQr(uuid: string | null) {
       const res = await fetch(url, { credentials: "include" });
       if (res.status === 404) throw new Error("Location not found");
       if (!res.ok) throw new Error("Failed to fetch location");
-      return api.locations.getByQr.responses[200].parse(await res.json());
+      const json = await res.json();
+      return api.locations.getByQr.responses[200].parse(json);
     },
     enabled: !!uuid,
     retry: false,
@@ -170,7 +178,8 @@ export function useMaterials(params?: { search?: string; type?: string }) {
 
             const res = await fetch(url.toString(), { credentials: "include" });
             if (!res.ok) throw new Error("Failed to fetch materials");
-            return api.materials.list.responses[200].parse(await res.json());
+            const json = await res.json();
+            return api.materials.list.responses[200].parse(json);
         }
     });
 }
@@ -188,7 +197,8 @@ export function useCreateMaterial() {
                 credentials: "include",
             });
             if (!res.ok) throw new Error("Failed to create material");
-            return api.materials.create.responses[201].parse(await res.json());
+            const json = await res.json();
+            return api.materials.create.responses[201].parse(json);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [api.materials.list.path] });
