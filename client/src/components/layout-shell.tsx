@@ -32,6 +32,7 @@ export function LayoutShell({ children }: LayoutShellProps) {
   const navigation = [
     { name: t("nav.dashboard"), href: "/", icon: LayoutDashboard },
     { name: t("nav.register_box"), href: "/register-box", icon: Package },
+    { name: t("nav.ship_box"), href: "/ship-box", icon: Truck },
     { name: t("nav.materials"), href: "/materials", icon: Box },
     { name: t("nav.orders"), href: "/orders", icon: Truck },
     ...(isAdmin ? [

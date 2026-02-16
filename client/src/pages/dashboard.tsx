@@ -132,6 +132,16 @@ export default function Dashboard() {
           />
         </motion.div>
 
+        <motion.div variants={item}>
+          <DashboardCard
+            title={t("dashboard.ship.title")}
+            icon={Truck}
+            description={t("dashboard.ship.desc")}
+            href="/ship-box"
+            color="bg-red-600"
+          />
+        </motion.div>
+
         {user?.role === 'admin' && (
           <motion.div variants={item}>
             <DashboardCard

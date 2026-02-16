@@ -10,6 +10,7 @@ import NotFound from "@/pages/not-found";
 import Login from "@/pages/auth/login";
 import Dashboard from "@/pages/dashboard";
 import BoxRegistrationWizard from "@/pages/box-registration/wizard";
+import BoxShipping from "@/pages/box-shipping/page";
 import MaterialsList from "@/pages/materials/list";
 import OrdersList from "@/pages/orders/list";
 import UsersList from "@/pages/users/list";
@@ -56,6 +57,10 @@ function Router() {
       
       <Route path="/register-box">
         <ProtectedRoute component={BoxRegistrationWizard} />
+      </Route>
+
+      <Route path="/ship-box">
+        <ProtectedRoute component={BoxShipping} />
       </Route>
       
       <Route path="/materials">

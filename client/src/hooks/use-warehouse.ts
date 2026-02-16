@@ -57,6 +57,42 @@ export function useCompleteOrder() {
 }
 
 // === BOXES ===
+export function useBoxes() {
+  return useQuery({
+    queryKey: [api.boxes.list.path],
+    queryFn: async () => {
+      const res = await fetch(api.boxes.list.path, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch boxes");
+      return api.boxes.list.responses[200].parse(await res.json());
+    }
+  });
+}
+
+export function useShipBox() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const url = buildUrl(api.boxes.ship.path, { id });
+      const res = await fetch(url, {
+        method: api.boxes.ship.method,
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to ship box");
+      return api.boxes.ship.responses[200].parse(await res.json());
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.boxes.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.boxes.stats.path] });
+      toast({ title: "Success", description: "Box shipped successfully" });
+    },
+    onError: (err: any) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  });
+}
+
 export function useCreateBox() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
