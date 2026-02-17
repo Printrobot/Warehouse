@@ -102,6 +102,13 @@ export const api = {
         400: errorSchemas.validation,
       },
     },
+    list: {
+      method: 'GET' as const,
+      path: '/api/boxes' as const,
+      responses: {
+        200: z.array(z.custom<typeof boxes.$inferSelect>()),
+      },
+    },
     ship: {
       method: 'PATCH' as const,
       path: '/api/boxes/:id/ship' as const,

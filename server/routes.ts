@@ -109,6 +109,11 @@ export async function registerRoutes(
   });
 
   // === BOXES ===
+  app.get(api.boxes.list.path, async (_req, res) => {
+    const boxes = await storage.getBoxes();
+    res.json(boxes);
+  });
+
   app.post(api.boxes.create.path, async (req, res) => {
     try {
         const input = api.boxes.create.input.parse(req.body);
