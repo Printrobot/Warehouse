@@ -60,22 +60,47 @@ export default function BoxRegistrationWizard() {
     setFormData(prev => ({ ...prev, stickerPhoto: src }));
     setIsOcrLoading(true);
     try {
-      const worker = await createWorker('rus+eng');
+      const worker = await createWorker('rus+eng', 1, {
+        logger: m => console.log(m),
+        errorHandler: err => console.error("Worker Error:", err)
+      });
       const { data: { text } } = await worker.recognize(src);
+      console.log("OCR Result:", text);
       
+      let foundAny = false;
       const qtyMatch = text.match(/(?:qty|кол-во|количество)?[:\s]*(\d+)/i);
       if (qtyMatch) {
         setFormData(prev => ({ ...prev, quantity: qtyMatch[1] }));
+        foundAny = true;
       }
       
       const boxNumMatch = text.match(/(\d+[\/\\]\d+)/);
       if (boxNumMatch) {
         setFormData(prev => ({ ...prev, numberInOrder: boxNumMatch[1] }));
+        foundAny = true;
+      }
+
+      if (!foundAny) {
+        toast({
+          title: t("ocr.no_match_title"),
+          description: t("ocr.no_match_desc"),
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: t("ocr.success_title"),
+          description: t("ocr.success_desc"),
+        });
       }
       
       await worker.terminate();
     } catch (error) {
       console.error("OCR Error:", error);
+      toast({
+        title: t("ocr.error_title"),
+        description: t("ocr.error_desc"),
+        variant: "destructive"
+      });
     } finally {
       setIsOcrLoading(false);
     }
