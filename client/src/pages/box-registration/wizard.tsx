@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createWorker } from "tesseract.js";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -52,6 +53,33 @@ export default function BoxRegistrationWizard() {
     tempLocationDesc: "",
     tempLocationPhoto: "",
   });
+
+  const [isOcrLoading, setIsOcrLoading] = useState(false);
+
+  const handleStickerCapture = async (src: string) => {
+    setFormData(prev => ({ ...prev, stickerPhoto: src }));
+    setIsOcrLoading(true);
+    try {
+      const worker = await createWorker('rus+eng');
+      const { data: { text } } = await worker.recognize(src);
+      
+      const qtyMatch = text.match(/(?:qty|кол-во|количество)?[:\s]*(\d+)/i);
+      if (qtyMatch) {
+        setFormData(prev => ({ ...prev, quantity: qtyMatch[1] }));
+      }
+      
+      const boxNumMatch = text.match(/(\d+[\/\\]\d+)/);
+      if (boxNumMatch) {
+        setFormData(prev => ({ ...prev, numberInOrder: boxNumMatch[1] }));
+      }
+      
+      await worker.terminate();
+    } catch (error) {
+      console.error("OCR Error:", error);
+    } finally {
+      setIsOcrLoading(false);
+    }
+  };
 
   // Location Query logic (only runs when locationUuid is set)
   const { data: scannedLocation } = useLocationByQr(formData.locationUuid || null);
@@ -218,15 +246,15 @@ export default function BoxRegistrationWizard() {
                 <div className="space-y-4">
                     <Label>Sticker Photo (OCR)</Label>
                     <CameraCapture 
-                        onCapture={(src) => {
-                            updateField("stickerPhoto", src);
-                            // Simulate OCR delay
-                            setTimeout(() => {
-                                updateField("quantity", "1000"); // Fake OCR result
-                            }, 1500);
-                        }}
+                        onCapture={handleStickerCapture}
                         label="Capture Sticker" 
                     />
+                    {isOcrLoading && (
+                        <div className="flex items-center gap-2 mt-2 text-primary animate-pulse text-sm font-medium">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            {t("common.loading_ocr") || "Processing image..."}
+                        </div>
+                    )}
                     {formData.stickerPhoto && (
                         <div className="aspect-video bg-black rounded-lg overflow-hidden mt-2">
                              <img src={formData.stickerPhoto} className="w-full h-full object-contain" />
