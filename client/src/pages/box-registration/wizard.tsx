@@ -156,7 +156,7 @@ export default function BoxRegistrationWizard() {
 
     createBox.mutate(payload, {
       onSuccess: () => {
-        setLocation("/"); // Redirect to dashboard
+        nextStep(); // Advance to Step 5 (REVIEW)
       }
     });
   };
@@ -457,7 +457,7 @@ export default function BoxRegistrationWizard() {
           case Step.STICKER_DETAILS: return !!formData.numberInOrder && !!formData.quantity;
           case Step.LOCATION_SELECT: 
             if (formData.locationType === 'permanent') return !!selectedLocation;
-            return !!formData.tempLocationDesc;
+            return !!formData.tempLocationDesc && !!formData.tempLocationPhoto;
           default: return true;
       }
   };
