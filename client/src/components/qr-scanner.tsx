@@ -34,7 +34,11 @@ export function QrScanner({ onScan, label = "Scan QR Code" }: QrScannerProps) {
           { 
             fps: 10, 
             qrbox: { width: 250, height: 250 },
-            aspectRatio: 1.0
+            aspectRatio: 1.0,
+            videoConstraints: {
+              facingMode: "environment"
+            },
+            showTorchButtonIfSupported: true
           },
           /* verbose= */ false
         );
