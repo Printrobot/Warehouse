@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CameraCapture } from "@/components/camera-capture";
 import { QrScanner } from "@/components/qr-scanner";
 import { useCreateBox, useLocationByQr, useOrders, useLocations } from "@/hooks/use-warehouse";
+import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, ChevronRight, Loader2, Package, QrCode } from "lucide-react";
 import { useLocation } from "wouter";
@@ -35,6 +36,7 @@ export default function BoxRegistrationWizard() {
   const [currentStep, setCurrentStep] = useState<Step>(Step.ORDER_SELECT);
   const [, setLocation] = useLocation();
   const createBox = useCreateBox();
+  const { toast } = useToast();
   const { data: orders } = useOrders({ status: 'active' });
   const { data: locations } = useLocations();
   const { t } = useLanguage();
