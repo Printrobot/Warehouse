@@ -138,21 +138,23 @@ export default function BoxRegistrationWizard() {
     // Prepare payload
     const payload = {
       orderId: formData.orderId ? parseInt(formData.orderId) : null,
-      manualOrderNumber: formData.orderId ? null : formData.manualOrderNumber, // Add this if schema supports it
+      manualOrderNumber: formData.orderId ? null : formData.manualOrderNumber,
       numberInOrder: formData.numberInOrder,
-      quantity: parseInt(formData.quantity),
+      quantity: parseInt(formData.quantity) || 0,
       locationType: formData.locationType,
-      locationId: selectedLocation?.id, // Use the ID from the fetched/selected location
-      tempLocationDesc: formData.tempLocationDesc,
-      tempLocationPhoto: formData.tempLocationPhoto,
+      locationId: formData.locationType === 'permanent' ? (selectedLocation?.id || null) : null,
+      tempLocationDesc: formData.locationType === 'temporary' ? (formData.tempLocationDesc || null) : null,
+      tempLocationPhoto: formData.locationType === 'temporary' ? (formData.tempLocationPhoto || null) : null,
       status: 'in_stock' as const,
       productPhotos: formData.productPhotos,
-      stickerPhoto: formData.stickerPhoto,
+      stickerPhoto: formData.stickerPhoto || null,
       problemType: null,
       problemDesc: null,
       createdBy: 1, // Will be overridden by backend or session
       shippedBy: null
     };
+
+    console.log("Submitting box payload:", payload);
 
     createBox.mutate(payload, {
       onSuccess: () => {
@@ -408,6 +410,10 @@ export default function BoxRegistrationWizard() {
         return (
           <div className="space-y-6">
              <Card className="p-6 space-y-4">
+                 <div className="flex items-center gap-2 text-green-600 mb-2">
+                    <Check className="w-5 h-5" />
+                    <span className="font-bold text-lg uppercase tracking-tight">Saved Successfully</span>
+                 </div>
                  <div className="grid grid-cols-2 gap-4 text-sm">
                      <div>
                          <span className="text-muted-foreground">Order:</span>

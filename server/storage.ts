@@ -96,7 +96,13 @@ export class DatabaseStorage implements IStorage {
 
   // === BOXES ===
   async createBox(box: InsertBox): Promise<Box> {
-    const [newBox] = await db.insert(boxes).values(box).returning();
+    const [newBox] = await db.insert(boxes).values({
+      ...box,
+      orderId: box.orderId || null,
+      locationId: box.locationId || null,
+      productPhotos: box.productPhotos || [],
+      status: box.status || 'in_stock',
+    }).returning();
     return newBox;
   }
 

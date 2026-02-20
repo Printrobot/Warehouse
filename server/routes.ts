@@ -116,11 +116,20 @@ export async function registerRoutes(
 
   app.post(api.boxes.create.path, async (req, res) => {
     try {
+        console.log("Creating box with payload:", JSON.stringify(req.body, null, 2));
         const input = api.boxes.create.input.parse(req.body);
         const box = await storage.createBox(input);
         res.status(201).json(box);
-    } catch (e) {
-        res.status(400).json({ message: "Invalid input" });
+    } catch (e: any) {
+        console.error("BOX CREATION ERROR:", e);
+        if (e instanceof z.ZodError) {
+            console.error("Zod Validation Error:", JSON.stringify(e.errors, null, 2));
+            return res.status(400).json({ message: "Validation failed", errors: e.errors });
+        }
+        res.status(400).json({ 
+          message: "Internal error during creation", 
+          error: e.message 
+        });
     }
   });
 
