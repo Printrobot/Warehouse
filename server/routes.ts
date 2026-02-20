@@ -182,6 +182,91 @@ export async function registerRoutes(
       res.json(logs);
   });
 
+  app.patch(api.orders.complete.path, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const order = await storage.updateOrder(id, { 
+        status: 'completed',
+        completedAt: new Date()
+      });
+      
+      // Audit
+      // @ts-ignore
+      if (req.session.userId) {
+        // @ts-ignore
+        const user = await storage.getUser(req.session.userId);
+        await storage.createAuditLog({
+            userId: user!.id,
+            userName: user!.name,
+            actionType: 'update',
+            entityType: 'order',
+            entityId: String(order.id),
+            details: { status: 'completed' }
+        });
+      }
+
+      res.json(order);
+    } catch (e) {
+      res.status(404).json({ message: "Order not found" });
+    }
+  });
+
+  app.patch(api.boxes.ship.path, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const box = await storage.updateBox(id, { 
+        status: 'shipped',
+        shippedAt: new Date(),
+        // @ts-ignore
+        shippedBy: req.session.userId || 1
+      });
+      
+      // Audit
+      // @ts-ignore
+      if (req.session.userId) {
+        // @ts-ignore
+        const user = await storage.getUser(req.session.userId);
+        await storage.createAuditLog({
+            userId: user!.id,
+            userName: user!.name,
+            actionType: 'ship',
+            entityType: 'box',
+            entityId: String(box.id),
+            details: { status: 'shipped' }
+        });
+      }
+
+      res.json(box);
+    } catch (e) {
+      res.status(404).json({ message: "Box not found" });
+    }
+  });
+
+  app.patch(api.materials.issue.path, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { reason } = req.body;
+      const mat = await storage.updateMaterial(id, { 
+        status: 'issued',
+        issuedAt: new Date(),
+        issuedReason: reason
+      });
+      res.json(mat);
+    } catch (e) {
+      res.status(404).json({ message: "Material not found" });
+    }
+  });
+
+  app.get(api.settings.get.path, async (req, res) => {
+    const s = await storage.getSettings();
+    res.json(s);
+  });
+
+  app.post(api.settings.update.path, async (req, res) => {
+    const s = await storage.updateSettings(req.body);
+    res.json(s);
+  });
+
   return httpServer;
 }
 
