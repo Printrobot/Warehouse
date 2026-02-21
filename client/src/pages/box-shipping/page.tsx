@@ -61,8 +61,9 @@ export default function BoxShipping() {
               onScan={handleScan} 
               label={t("ship.scan_label")} 
               onError={(error) => {
+                const errorStr = String(error || "");
                 // Only show relevant errors, ignore constant scanning noise
-                if (error?.includes("No MultiFormat Readers")) return;
+                if (errorStr.includes("No MultiFormat Readers")) return;
                 toast({
                   title: "Scanner Error",
                   description: "Could not start camera or decode QR. Please try manual entry.",

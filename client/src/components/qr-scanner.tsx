@@ -50,7 +50,7 @@ export function QrScanner({ onScan, onError, label = "Scan QR Code" }: QrScanner
             stopScanning();
           },
           (error) => {
-            if (onError) onError(error);
+            if (onError && typeof error === 'string') onError(error);
           }
         );
         scannerRef.current = scanner;
