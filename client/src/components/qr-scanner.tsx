@@ -5,10 +5,11 @@ import { Scan, X } from "lucide-react";
 
 interface QrScannerProps {
   onScan: (data: string) => void;
+  onError?: (error: string) => void;
   label?: string;
 }
 
-export function QrScanner({ onScan, label = "Scan QR Code" }: QrScannerProps) {
+export function QrScanner({ onScan, onError, label = "Scan QR Code" }: QrScannerProps) {
   const [isScanning, setIsScanning] = useState(false);
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   
@@ -49,7 +50,7 @@ export function QrScanner({ onScan, label = "Scan QR Code" }: QrScannerProps) {
             stopScanning();
           },
           (error) => {
-            // console.warn(error); // Ignore scan errors they happen constantly
+            if (onError) onError(error);
           }
         );
         scannerRef.current = scanner;
@@ -64,7 +65,7 @@ export function QrScanner({ onScan, label = "Scan QR Code" }: QrScannerProps) {
         scannerRef.current.clear().catch(console.error);
       }
     };
-  }, [isScanning, onScan]);
+  }, [isScanning, onScan, onError]);
 
   if (!isScanning) {
     return (

@@ -95,6 +95,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // === BOXES ===
+  async getBoxes(): Promise<Box[]> {
+    return await db.select().from(boxes).orderBy(desc(boxes.createdAt));
+  }
+
   async createBox(box: InsertBox): Promise<Box> {
     const [newBox] = await db.insert(boxes).values({
       ...box,

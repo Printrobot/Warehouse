@@ -110,8 +110,13 @@ export async function registerRoutes(
 
   // === BOXES ===
   app.get(api.boxes.list.path, async (_req, res) => {
-    const boxes = await storage.getBoxes();
-    res.json(boxes);
+    try {
+      const boxes = await storage.getBoxes();
+      res.json(boxes);
+    } catch (e: any) {
+      console.error("GET /api/boxes error:", e);
+      res.status(500).json({ message: e.message || "Internal Server Error" });
+    }
   });
 
   app.post(api.boxes.create.path, async (req, res) => {

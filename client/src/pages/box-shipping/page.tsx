@@ -57,7 +57,19 @@ export default function BoxShipping() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <QrScanner onScan={handleScan} label={t("ship.scan_label")} />
+            <QrScanner 
+              onScan={handleScan} 
+              label={t("ship.scan_label")} 
+              onError={(error) => {
+                // Only show relevant errors, ignore constant scanning noise
+                if (error?.includes("No MultiFormat Readers")) return;
+                toast({
+                  title: "Scanner Error",
+                  description: "Could not start camera or decode QR. Please try manual entry.",
+                  variant: "destructive"
+                });
+              }}
+            />
           </CardContent>
         </Card>
 
