@@ -281,8 +281,42 @@ async function seedDatabase() {
 
   const existingOrders = await storage.getOrders();
   if (existingOrders.length === 0) {
-    await storage.createOrder({ number: 'ORD-1001', customer: 'Acme Corp', status: 'active' });
-    await storage.createOrder({ number: 'ORD-1002', customer: 'Globex', status: 'active' });
+    const o1 = await storage.createOrder({ number: 'ORD-1001', customer: 'Acme Corp', status: 'active' });
+    const o2 = await storage.createOrder({ number: 'ORD-1002', customer: 'Globex', status: 'active' });
     console.log('Seeded orders');
+
+    // Add mock boxes for testing shipping
+    await storage.createBox({
+      orderId: o1.id,
+      manualOrderNumber: o1.number,
+      numberInOrder: '1/3',
+      quantity: 500,
+      locationType: 'permanent',
+      locationId: 1,
+      status: 'in_stock',
+      productPhotos: [],
+      stickerPhoto: null,
+      problemType: null,
+      problemDesc: null,
+      createdBy: 1,
+      shippedBy: null
+    });
+
+    await storage.createBox({
+      orderId: o2.id,
+      manualOrderNumber: o2.number,
+      numberInOrder: '2/10',
+      quantity: 1200,
+      locationType: 'permanent',
+      locationId: 2,
+      status: 'in_stock',
+      productPhotos: [],
+      stickerPhoto: null,
+      problemType: null,
+      problemDesc: null,
+      createdBy: 1,
+      shippedBy: null
+    });
+    console.log('Seeded mock boxes');
   }
 }
