@@ -1,25 +1,59 @@
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@shared/routes";
+import { api, buildUrl } from "@shared/routes";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, Search } from "lucide-react";
+import { Loader2, CheckCircle2, Search, Plus, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useCompleteOrder } from "@/hooks/use-warehouse";
+import { useCompleteOrder, useCreateOrder } from "@/hooks/use-warehouse";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Form, FormControl,FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { insertOrderSchema } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
 
 export default function OrdersList() {
   const { data: orders, isLoading } = useQuery({
     queryKey: [api.orders.list.path],
+    queryFn: async () => {
+      const res = await fetch(api.orders.list.path, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch orders");
+      return res.json();
+    }
   });
   const completeOrder = useCompleteOrder();
+  const createOrder = useCreateOrder();
+  const { toast } = useToast();
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const [search, setSearch] = useState("");
   const filteredOrders = orders?.filter(o => 
     o.number.toLowerCase().includes(search.toLowerCase()) || 
     o.customer?.toLowerCase().includes(search.toLowerCase())
   );
+
+  const form = useForm({
+    resolver: zodResolver(insertOrderSchema),
+    defaultValues: {
+      number: "",
+      customer: "",
+      status: "active"
+    }
+  });
+
+  const onSubmit = (data: any) => {
+    createOrder.mutate(data, {
+      onSuccess: () => {
+        setIsCreateOpen(false);
+        form.reset();
+        toast({ title: "Success", description: "Order created successfully" });
+      }
+    });
+  };
 
   if (isLoading) {
     return (
@@ -32,13 +66,61 @@ export default function OrdersList() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">Orders Management</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t("orders.title")}</h1>
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <DialogTrigger asChild>
+            <Button className="h-12 px-6 gap-2">
+              <Plus className="w-5 h-5" /> {t("orders.new")}
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="bg-white dark:bg-slate-900">
+            <DialogHeader>
+              <DialogTitle>{t("orders.create_title")}</DialogTitle>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="number"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("orders.number")}</FormLabel>
+                      <FormControl>
+                        <Input placeholder="ORD-XXXX" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="customer"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("orders.customer")}</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Client Name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter>
+                  <Button type="submit" disabled={createOrder.isPending}>
+                    {createOrder.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {t("orders.new")}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
         <Input 
-          placeholder="Search orders by number or customer..." 
+          placeholder={t("orders.search_placeholder")} 
           className="pl-10 h-12 bg-white dark:bg-slate-900"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -47,17 +129,17 @@ export default function OrdersList() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Orders</CardTitle>
+          <CardTitle>{t("orders.all")}</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Order Number</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t("orders.number")}</TableHead>
+                <TableHead>{t("orders.customer")}</TableHead>
+                <TableHead>{t("orders.status")}</TableHead>
+                <TableHead>{t("orders.date")}</TableHead>
+                <TableHead className="text-right">{t("orders.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -71,17 +153,17 @@ export default function OrdersList() {
                     </Badge>
                   </TableCell>
                   <TableCell>{new Date(order.createdAt!).toLocaleDateString()}</TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right space-x-2">
                     {order.status === "active" && (
                       <Button 
                         size="sm" 
                         variant="outline"
-                        className="h-8 gap-1.5"
+                        className="h-8 gap-1.5 border-green-200 hover:bg-green-50 hover:text-green-700"
                         onClick={() => completeOrder.mutate(order.id)}
                         disabled={completeOrder.isPending}
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
-                        Complete
+                        {t("orders.complete")}
                       </Button>
                     )}
                   </TableCell>
