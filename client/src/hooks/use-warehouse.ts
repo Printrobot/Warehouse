@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl, type InsertBox, type InsertMaterial } from "@shared/routes";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/use-language";
 
 // === ORDERS ===
 export function useOrders(params?: { status?: 'active' | 'completed'; search?: string }) {
@@ -37,6 +38,7 @@ export function useOrder(id: number) {
 export function useCreateOrder() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   return useMutation({
     mutationFn: async (data: any) => {
@@ -53,7 +55,7 @@ export function useCreateOrder() {
       queryClient.invalidateQueries({ queryKey: [api.orders.list.path] });
     },
     onError: (err) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: t("common.error") || "Error", description: err.message, variant: "destructive" });
     }
   });
 }
@@ -61,6 +63,7 @@ export function useCreateOrder() {
 export function useCompleteOrder() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   return useMutation({
     mutationFn: async (id: number) => {
@@ -75,10 +78,10 @@ export function useCompleteOrder() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.orders.list.path] });
-      toast({ title: "Success", description: "Order status updated" });
+      toast({ title: t("common.success") || "Success", description: t("orders.status_updated") || "Order status updated" });
     },
     onError: (err) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: t("common.error") || "Error", description: err.message, variant: "destructive" });
     }
   });
 }
