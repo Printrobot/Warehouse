@@ -86,6 +86,8 @@ export function useUpdateOrder() {
     }
   });
 }
+
+export function useCompleteOrder() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { t } = useLanguage();
