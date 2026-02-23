@@ -15,8 +15,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertOrderSchema } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+import { useLanguage } from "@/hooks/use-language";
 
 export default function OrdersList() {
+  const { t } = useLanguage();
   const { data: orders, isLoading } = useQuery({
     queryKey: [api.orders.list.path],
     queryFn: async () => {
