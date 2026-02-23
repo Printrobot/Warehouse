@@ -60,7 +60,32 @@ export function useCreateOrder() {
   });
 }
 
-export function useCompleteOrder() {
+export function useUpdateOrder() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const url = buildUrl(api.orders.get.path, { id });
+      const res = await fetch(url, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to update order");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.orders.list.path] });
+      toast({ title: t("common.success") || "Success", description: "Order updated" });
+    },
+    onError: (err) => {
+      toast({ title: t("common.error") || "Error", description: err.message, variant: "destructive" });
+    }
+  });
+}
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { t } = useLanguage();

@@ -187,6 +187,17 @@ export async function registerRoutes(
       res.json(logs);
   });
 
+  app.patch(api.orders.get.path, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const input = insertOrderSchema.partial().parse(req.body);
+      const order = await storage.updateOrder(id, input);
+      res.json(order);
+    } catch (e) {
+      res.status(400).json({ message: "Invalid input" });
+    }
+  });
+
   app.patch(api.orders.complete.path, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
