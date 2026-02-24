@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle2, Search, Plus, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCompleteOrder, useCreateOrder, useUpdateOrder, useOrder } from "@/hooks/use-warehouse";
-import { useState } from "react";
+import React, { useState, Fragment } from "react";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Form, FormControl,FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -214,7 +214,7 @@ export default function OrdersList() {
             </TableHeader>
             <TableBody>
               {filteredOrders?.map((order) => (
-                <React.Fragment key={order.id}>
+                <Fragment key={order.id}>
                   <TableRow className="cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-800/50" onClick={() => toggleExpand(order.id)}>
                     <TableCell>
                       {expandedOrders.has(order.id) ? <ChevronUp className="w-4 h-4 text-primary" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
@@ -261,7 +261,7 @@ export default function OrdersList() {
                       </TableCell>
                     </TableRow>
                   )}
-                </React.Fragment>
+                </Fragment>
               ))}
               {filteredOrders?.length === 0 && (
                 <TableRow>
