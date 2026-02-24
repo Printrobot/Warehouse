@@ -34,7 +34,7 @@ export function LayoutShell({ children }: LayoutShellProps) {
     { name: t("nav.register_box"), href: "/register-box", icon: Package },
     { name: t("nav.ship_box"), href: "/ship-box", icon: Truck },
     { name: t("nav.materials"), href: "/materials", icon: Box },
-    { name: t("nav.orders"), href: "/orders", icon: Truck },
+    { name: t("nav.orders"), href: "/orders", icon: Package },
     ...(isAdmin ? [
       { name: t("nav.users"), href: "/users", icon: Users },
       { name: t("nav.settings"), href: "/settings", icon: Settings },

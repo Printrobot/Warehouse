@@ -146,7 +146,7 @@ export default function Dashboard() {
           <motion.div variants={item}>
             <DashboardCard
               title={t("dashboard.mgmt.title")}
-              icon={Truck}
+              icon={Package}
               description={t("dashboard.mgmt.desc")}
               href="/orders"
               color="bg-slate-700"
