@@ -143,6 +143,16 @@ export async function registerRoutes(
       res.json(stats);
   });
 
+  app.get(api.boxes.shippedReport.path, async (req, res) => {
+    try {
+      const { startDate, endDate } = api.boxes.shippedReport.input.parse(req.query);
+      const report = await storage.getShippedBoxesReport(new Date(startDate), new Date(endDate));
+      res.json(report);
+    } catch (e) {
+      res.status(400).json({ message: "Invalid dates" });
+    }
+  });
+
   // === MATERIALS ===
   app.get(api.materials.list.path, async (req, res) => {
       const mats = await storage.getMaterials();

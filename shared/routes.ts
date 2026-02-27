@@ -126,6 +126,17 @@ export const api = {
                 shippedToday: z.number(),
             })
         }
+    },
+    shippedReport: {
+      method: 'GET' as const,
+      path: '/api/boxes/reports/shipped' as const,
+      input: z.object({
+        startDate: z.string(),
+        endDate: z.string(),
+      }),
+      responses: {
+        200: z.array(z.custom<typeof boxes.$inferSelect & { orderNumber: string | null, customer: string | null }>()),
+      },
     }
   },
 

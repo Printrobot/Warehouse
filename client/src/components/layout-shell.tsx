@@ -37,6 +37,7 @@ export function LayoutShell({ children }: LayoutShellProps) {
     { name: t("nav.orders"), href: "/orders", icon: Package },
     ...(isAdmin ? [
       { name: t("nav.users"), href: "/users", icon: Users },
+      { name: t("nav.reports"), href: "/reports/shipped", icon: History },
       { name: t("nav.settings"), href: "/settings", icon: Settings },
       { name: t("nav.history"), href: "/history", icon: History },
     ] : []),

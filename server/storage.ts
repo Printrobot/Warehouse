@@ -25,6 +25,7 @@ export interface IStorage {
   getBoxesByOrder(orderId: number): Promise<Box[]>;
   updateBox(id: number, updates: Partial<Box>): Promise<Box>;
   getBoxStats(): Promise<{ totalInStock: number; shippedToday: number }>;
+  getShippedBoxesReport(startDate: Date, endDate: Date): Promise<(Box & { orderNumber: string | null; customer: string | null })[]>;
 
   // Materials
   getMaterials(type?: string, search?: string): Promise<Material[]>;
@@ -143,6 +144,27 @@ export class DatabaseStorage implements IStorage {
       totalInStock: Number(inStock?.count || 0),
       shippedToday: Number(shipped?.count || 0)
     };
+  }
+
+  async getShippedBoxesReport(startDate: Date, endDate: Date): Promise<(Box & { orderNumber: string | null; customer: string | null })[]> {
+    const results = await db
+      .select({
+        box: boxes,
+        orderNumber: orders.number,
+        customer: orders.customer,
+      })
+      .from(boxes)
+      .leftJoin(orders, eq(boxes.orderId, orders.id))
+      .where(
+        sql`${boxes.status} = 'shipped' AND ${boxes.shippedAt} >= ${startDate} AND ${boxes.shippedAt} <= ${endDate}`
+      )
+      .orderBy(desc(boxes.shippedAt));
+
+    return results.map(r => ({
+      ...r.box,
+      orderNumber: r.orderNumber,
+      customer: r.customer,
+    }));
   }
 
   // === MATERIALS ===

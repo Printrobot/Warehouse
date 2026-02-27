@@ -191,6 +191,22 @@ export function useBoxStats() {
     });
 }
 
+export function useShippedReport(startDate: string, endDate: string) {
+  return useQuery({
+    queryKey: [api.boxes.shippedReport.path, startDate, endDate],
+    queryFn: async () => {
+      const url = new URL(api.boxes.shippedReport.path, window.location.origin);
+      url.searchParams.append('startDate', startDate);
+      url.searchParams.append('endDate', endDate);
+      const res = await fetch(url.toString(), { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch report");
+      const json = await res.json();
+      return api.boxes.shippedReport.responses[200].parse(json);
+    },
+    enabled: !!startDate && !!endDate,
+  });
+}
+
 // === LOCATIONS ===
 export function useLocations() {
     return useQuery({
