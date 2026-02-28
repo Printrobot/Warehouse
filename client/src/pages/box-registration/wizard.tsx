@@ -87,6 +87,24 @@ export default function BoxRegistrationWizard() {
         const transcript = event.results[0][0].transcript.toLowerCase();
         console.log("Speech Result:", transcript);
         
+        // Step 0: Identify Order logic
+        if (currentStep === Step.ORDER_SELECT) {
+          const cleanTranscript = transcript.trim().toUpperCase();
+          // Try to find matching order
+          const found = orders?.find(o => 
+            o.number.toUpperCase() === cleanTranscript || 
+            o.number.toUpperCase().includes(cleanTranscript)
+          );
+          
+          if (found) {
+            updateField("orderId", found.id.toString());
+            updateField("manualOrderNumber", found.number);
+          } else {
+            updateField("manualOrderNumber", transcript.toUpperCase());
+            updateField("orderId", "");
+          }
+        }
+
         // Logic for quantity: "количество сто" or "сто штук"
         const qtyMatch = transcript.match(/(\d+)/);
         if (qtyMatch) {
@@ -277,7 +295,19 @@ export default function BoxRegistrationWizard() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Type Order Number Manually</Label>
+                    <Label className="flex justify-between items-center">
+                      <span>Type Order Number Manually</span>
+                      {recognition && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className={isListening ? "text-red-500 animate-pulse" : "text-muted-foreground"}
+                          onClick={toggleListening}
+                        >
+                          {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                        </Button>
+                      )}
+                    </Label>
                     <Input 
                       placeholder="e.g. ORD-1234" 
                       className="h-12"
