@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createWorker } from "tesseract.js";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,10 +10,25 @@ import { QrScanner } from "@/components/qr-scanner";
 import { useCreateBox, useLocationByQr, useOrders, useLocations } from "@/hooks/use-warehouse";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, ChevronRight, Loader2, Package, QrCode } from "lucide-react";
+import { Check, ChevronRight, Loader2, Package, QrCode, Mic, MicOff } from "lucide-react";
 import { useLocation } from "wouter";
 
 import { useLanguage } from "@/hooks/use-language";
+
+// Speech Recognition Type Definition
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+}
+
+interface SpeechRecognitionEvent extends Event {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+}
+
+interface Window {
+  SpeechRecognition?: any;
+  webkitSpeechRecognition?: any;
+}
 
 // Steps Enum
 enum Step {
@@ -57,6 +72,59 @@ export default function BoxRegistrationWizard() {
   });
 
   const [isOcrLoading, setIsOcrLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [recognition, setRecognition] = useState<any>(null);
+
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const rec = new SpeechRecognition();
+      rec.continuous = false;
+      rec.interimResults = false;
+      rec.lang = t("common.lang_code") || "ru-RU";
+
+      rec.onresult = (event: SpeechRecognitionEvent) => {
+        const transcript = event.results[0][0].transcript.toLowerCase();
+        console.log("Speech Result:", transcript);
+        
+        // Logic for quantity: "количество сто" or "сто штук"
+        const qtyMatch = transcript.match(/(\d+)/);
+        if (qtyMatch) {
+          updateField("quantity", qtyMatch[1]);
+        }
+
+        // Logic for box number: "номер один дробь пять" or "один пять"
+        const boxMatch = transcript.match(/(\d+)\s*(?:дробь|на|из|\/|\\)\s*(\d+)/);
+        if (boxMatch) {
+          updateField("numberInOrder", `${boxMatch[1]}/${boxMatch[2]}`);
+        } else if (qtyMatch && !transcript.includes("количеств")) {
+           // Fallback if just one number is said and we are in box num field focus context
+           // For now just logging
+        }
+
+        setIsListening(false);
+        toast({ title: t("speech.recognized") || "Recognized", description: transcript });
+      };
+
+      rec.onerror = (event: SpeechRecognitionErrorEvent) => {
+        console.error("Speech Error:", event.error);
+        setIsListening(false);
+      };
+
+      rec.onend = () => setIsListening(false);
+
+      setRecognition(rec);
+    }
+  }, [t]);
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognition?.stop();
+    } else {
+      recognition?.start();
+      setIsListening(true);
+    }
+  };
 
   const handleStickerCapture = async (src: string) => {
     setFormData(prev => ({ ...prev, stickerPhoto: src }));
@@ -292,7 +360,19 @@ export default function BoxRegistrationWizard() {
                 </div>
                 <div className="space-y-4">
                      <div className="space-y-2">
-                        <Label>Box Number (e.g., 3/10)</Label>
+                        <Label className="flex justify-between items-center">
+                          <span>Box Number (e.g., 3/10)</span>
+                          {recognition && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className={isListening ? "text-red-500 animate-pulse" : "text-muted-foreground"}
+                              onClick={toggleListening}
+                            >
+                              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                            </Button>
+                          )}
+                        </Label>
                         <Input 
                             value={formData.numberInOrder} 
                             onChange={(e) => updateField("numberInOrder", e.target.value)}
@@ -301,7 +381,19 @@ export default function BoxRegistrationWizard() {
                         />
                      </div>
                      <div className="space-y-2">
-                        <Label>Quantity</Label>
+                        <Label className="flex justify-between items-center">
+                          <span>Quantity</span>
+                          {recognition && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className={isListening ? "text-red-500 animate-pulse" : "text-muted-foreground"}
+                              onClick={toggleListening}
+                            >
+                              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                            </Button>
+                          )}
+                        </Label>
                         <Input 
                             type="number"
                             value={formData.quantity} 
@@ -309,7 +401,7 @@ export default function BoxRegistrationWizard() {
                             placeholder="Total items"
                             className="h-12"
                         />
-                        <p className="text-xs text-muted-foreground">Auto-filled from sticker if clear.</p>
+                        <p className="text-xs text-muted-foreground">Auto-filled from sticker or voice.</p>
                      </div>
                 </div>
              </div>
