@@ -295,16 +295,21 @@ export default function BoxRegistrationWizard() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="flex justify-between items-center">
+                    <Label className="flex justify-between items-center h-8">
                       <span>Type Order Number Manually</span>
                       {recognition && (
                         <Button 
                           variant="ghost" 
                           size="sm" 
+                          type="button"
                           className={isListening ? "text-red-500 animate-pulse" : "text-muted-foreground"}
-                          onClick={toggleListening}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleListening();
+                          }}
                         >
-                          {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                          {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
                         </Button>
                       )}
                     </Label>
