@@ -84,6 +84,11 @@ export default function BoxRegistrationWizard() {
       rec.interimResults = false;
       rec.lang = t("common.lang_code") || "ru-RU";
 
+      rec.onstart = () => {
+        console.log("Speech recognition started");
+        setIsListening(true);
+      };
+
       rec.onresult = (event: SpeechRecognitionEvent) => {
         const transcript = event.results[0][0].transcript.toLowerCase();
         console.log("Speech Result:", transcript);
@@ -116,28 +121,32 @@ export default function BoxRegistrationWizard() {
         const boxMatch = transcript.match(/(\d+)\s*(?:дробь|на|из|\/|\\)\s*(\d+)/);
         if (boxMatch) {
           updateField("numberInOrder", `${boxMatch[1]}/${boxMatch[2]}`);
-        } else if (qtyMatch && !transcript.includes("количеств")) {
-           // Fallback if just one number is said and we are in box num field focus context
-           // For now just logging
         }
 
-        setIsListening(false);
         toast({ title: t("speech.recognized") || "Recognized", description: transcript });
       };
 
       rec.onerror = (event: SpeechRecognitionErrorEvent) => {
         console.error("Speech Error:", event.error);
         setIsListening(false);
+        toast({ 
+          title: t("common.error") || "Error", 
+          description: `Speech error: ${event.error}`,
+          variant: "destructive"
+        });
       };
 
-      rec.onend = () => setIsListening(false);
+      rec.onend = () => {
+        console.log("Speech recognition ended");
+        setIsListening(false);
+      };
 
       setRecognition(rec);
       console.log("Speech Recognition initialized");
     } else {
-      console.error("Speech Recognition not supported in this browser");
+      console.warn("Speech Recognition not supported in this browser");
     }
-  }, [t, currentStep, orders]); // Added currentStep and orders to dependencies
+  }, [t, currentStep, orders]);
 
   const toggleListening = () => {
     if (isListening) {
@@ -312,6 +321,14 @@ export default function BoxRegistrationWizard() {
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
+                          if (!recognition) {
+                            toast({
+                              title: "Not Supported",
+                              description: "Your browser does not support Speech Recognition. Please use Chrome or Safari.",
+                              variant: "destructive"
+                            });
+                            return;
+                          }
                           toggleListening();
                         }}
                       >
