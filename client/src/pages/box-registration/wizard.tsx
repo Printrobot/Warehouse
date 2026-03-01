@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, ChevronRight, Loader2, Package, QrCode, Mic, MicOff } from "lucide-react";
 import { useLocation } from "wouter";
+import { cn } from "@/lib/utils";
 
 import { useLanguage } from "@/hooks/use-language";
 
@@ -132,8 +133,11 @@ export default function BoxRegistrationWizard() {
       rec.onend = () => setIsListening(false);
 
       setRecognition(rec);
+      console.log("Speech Recognition initialized");
+    } else {
+      console.error("Speech Recognition not supported in this browser");
     }
-  }, [t]);
+  }, [t, currentStep, orders]); // Added currentStep and orders to dependencies
 
   const toggleListening = () => {
     if (isListening) {
@@ -295,27 +299,29 @@ export default function BoxRegistrationWizard() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="flex justify-between items-center h-8">
-                      <span>Type Order Number Manually</span>
-                      {recognition && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          type="button"
-                          className={isListening ? "text-red-500 animate-pulse" : "text-muted-foreground"}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            toggleListening();
-                          }}
-                        >
-                          {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-                        </Button>
-                      )}
+                    <Label className="flex justify-between items-center h-10">
+                      <span className="text-sm font-semibold">Type Order Number Manually</span>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        type="button"
+                        className={cn(
+                          "h-8 px-2 gap-1 transition-all",
+                          isListening ? "border-red-500 text-red-500 animate-pulse bg-red-50" : "text-muted-foreground hover:text-primary"
+                        )}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          toggleListening();
+                        }}
+                      >
+                        {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                        <span className="text-[10px] uppercase font-bold">{isListening ? "Stop" : "Voice"}</span>
+                      </Button>
                     </Label>
                     <Input 
                       placeholder="e.g. ORD-1234" 
-                      className="h-12"
+                      className="h-12 text-lg font-medium"
                       value={formData.manualOrderNumber}
                       onChange={(e) => {
                         updateField("manualOrderNumber", e.target.value);
