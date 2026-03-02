@@ -77,20 +77,32 @@ export default function BoxRegistrationWizard() {
   const [recognition, setRecognition] = useState<any>(null);
 
   useEffect(() => {
-    // Attempt to initialize recognition immediately and once
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    
-    if (SpeechRecognition && !recognition) {
-      const rec = new SpeechRecognition();
-      rec.continuous = false;
-      rec.interimResults = false;
+    const initSpeech = () => {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       
-      // Use a ref-like approach or just the current value from scope if we can
-      // But since this is a functional component, we'll use recognition state
-      setRecognition(rec);
-      console.log("Speech Recognition initialized successfully");
-    }
-  }, []);
+      if (SpeechRecognition && !recognition) {
+        try {
+          const rec = new SpeechRecognition();
+          rec.continuous = false;
+          rec.interimResults = false;
+          setRecognition(rec);
+          console.log("Speech Recognition initialized successfully");
+        } catch (e) {
+          console.error("Failed to construct SpeechRecognition:", e);
+        }
+      }
+    };
+
+    initSpeech();
+    // Also try initializing on first interaction if failed
+    window.addEventListener('touchstart', initSpeech, { once: true });
+    window.addEventListener('click', initSpeech, { once: true });
+    
+    return () => {
+      window.removeEventListener('touchstart', initSpeech);
+      window.removeEventListener('click', initSpeech);
+    };
+  }, [recognition]);
 
   // Update recognition properties when language or context changes
   useEffect(() => {
@@ -333,9 +345,12 @@ export default function BoxRegistrationWizard() {
                           e.preventDefault();
                           e.stopPropagation();
                           if (!recognition) {
+                            const isIframe = window.self !== window.top;
                             toast({
-                              title: "Not Supported",
-                              description: "Your browser does not support Speech Recognition. Please use Chrome or Safari.",
+                              title: t("speech.not_supported_title") || "Not Supported",
+                              description: isIframe 
+                                ? (t("speech.iframe_error") || "Speech API is blocked in Replit preview. Please open the app in a NEW TAB using the button in the top right.") 
+                                : (t("speech.browser_error") || "Your browser does not support Speech Recognition. Please use Chrome or Safari."),
                               variant: "destructive"
                             });
                             return;
