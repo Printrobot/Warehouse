@@ -77,76 +77,87 @@ export default function BoxRegistrationWizard() {
   const [recognition, setRecognition] = useState<any>(null);
 
   useEffect(() => {
+    // Attempt to initialize recognition immediately and once
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition) {
+    
+    if (SpeechRecognition && !recognition) {
       const rec = new SpeechRecognition();
       rec.continuous = false;
       rec.interimResults = false;
-      rec.lang = t("common.lang_code") || "ru-RU";
+      
+      // Use a ref-like approach or just the current value from scope if we can
+      // But since this is a functional component, we'll use recognition state
+      setRecognition(rec);
+      console.log("Speech Recognition initialized successfully");
+    }
+  }, []);
 
-      rec.onstart = () => {
+  // Update recognition properties when language or context changes
+  useEffect(() => {
+    if (recognition) {
+      recognition.lang = t("common.lang_code") || "ru-RU";
+      
+      recognition.onstart = () => {
         console.log("Speech recognition started");
         setIsListening(true);
       };
 
-      rec.onresult = (event: SpeechRecognitionEvent) => {
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
         const transcript = event.results[0][0].transcript.toLowerCase();
         console.log("Speech Result:", transcript);
         
-        // Step 0: Identify Order logic
-        if (currentStep === Step.ORDER_SELECT) {
-          const cleanTranscript = transcript.trim().toUpperCase();
-          // Try to find matching order
-          const found = orders?.find(o => 
-            o.number.toUpperCase() === cleanTranscript || 
-            o.number.toUpperCase().includes(cleanTranscript)
-          );
-          
-          if (found) {
-            updateField("orderId", found.id.toString());
-            updateField("manualOrderNumber", found.number);
-          } else {
-            updateField("manualOrderNumber", transcript.toUpperCase());
-            updateField("orderId", "");
-          }
-        }
-
-        // Logic for quantity: "количество сто" or "сто штук"
-        const qtyMatch = transcript.match(/(\d+)/);
-        if (qtyMatch) {
-          updateField("quantity", qtyMatch[1]);
-        }
-
-        // Logic for box number: "номер один дробь пять" or "один пять"
-        const boxMatch = transcript.match(/(\d+)\s*(?:дробь|на|из|\/|\\)\s*(\d+)/);
-        if (boxMatch) {
-          updateField("numberInOrder", `${boxMatch[1]}/${boxMatch[2]}`);
-        }
-
-        toast({ title: t("speech.recognized") || "Recognized", description: transcript });
+        // Use a function to access latest state without adding them to dependencies
+        handleSpeechResult(transcript);
       };
 
-      rec.onerror = (event: SpeechRecognitionErrorEvent) => {
+      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
         console.error("Speech Error:", event.error);
         setIsListening(false);
         toast({ 
           title: t("common.error") || "Error", 
-          description: `Speech error: ${event.error}`,
+          description: `Speech error: ${event.error}. Please check microphone permissions.`,
           variant: "destructive"
         });
       };
 
-      rec.onend = () => {
+      recognition.onend = () => {
         console.log("Speech recognition ended");
         setIsListening(false);
       };
-
-      setRecognition(rec);
-      console.log("Speech Recognition initialized");
-    } else {
-      console.warn("Speech Recognition not supported in this browser");
     }
-  }, [t, currentStep, orders]);
+  }, [recognition, t]);
+
+  const handleSpeechResult = useCallback((transcript: string) => {
+    // Logic for quantity
+    const qtyMatch = transcript.match(/(\d+)/);
+    
+    if (currentStep === Step.ORDER_SELECT) {
+      const cleanTranscript = transcript.trim().toUpperCase();
+      const found = orders?.find(o => 
+        o.number.toUpperCase() === cleanTranscript || 
+        o.number.toUpperCase().includes(cleanTranscript)
+      );
+      
+      if (found) {
+        updateField("orderId", found.id.toString());
+        updateField("manualOrderNumber", found.number);
+      } else {
+        updateField("manualOrderNumber", transcript.toUpperCase());
+        updateField("orderId", "");
+      }
+    }
+
+    if (qtyMatch) {
+      updateField("quantity", qtyMatch[1]);
+    }
+
+    const boxMatch = transcript.match(/(\d+)\s*(?:дробь|на|из|\/|\\)\s*(\d+)/);
+    if (boxMatch) {
+      updateField("numberInOrder", `${boxMatch[1]}/${boxMatch[2]}`);
+    }
+
+    toast({ title: t("speech.recognized") || "Recognized", description: transcript });
+  }, [currentStep, orders, t]);
 
   const toggleListening = () => {
     if (isListening) {
