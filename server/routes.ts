@@ -329,12 +329,77 @@ async function seedDatabase() {
     });
 
     await storage.createBox({
+      orderId: o1.id,
+      manualOrderNumber: o1.number,
+      numberInOrder: '2/3',
+      quantity: 300,
+      locationType: 'permanent',
+      locationId: 2,
+      status: 'in_stock',
+      productPhotos: [],
+      stickerPhoto: null,
+      problemType: null,
+      problemDesc: null,
+      createdBy: 1,
+      shippedBy: null
+    });
+
+    await storage.createBox({
+      orderId: o1.id,
+      manualOrderNumber: o1.number,
+      numberInOrder: '3/3',
+      quantity: 200,
+      locationType: 'temporary',
+      tempLocationDesc: 'Near exit',
+      status: 'in_stock',
+      productPhotos: [],
+      stickerPhoto: null,
+      problemType: null,
+      problemDesc: null,
+      createdBy: 1,
+      shippedBy: null
+    });
+
+    await storage.createBox({
+      orderId: o2.id,
+      manualOrderNumber: o2.number,
+      numberInOrder: '1/10',
+      quantity: 1000,
+      locationType: 'permanent',
+      locationId: 1,
+      status: 'in_stock',
+      productPhotos: [],
+      stickerPhoto: null,
+      problemType: null,
+      problemDesc: null,
+      createdBy: 1,
+      shippedBy: null
+    });
+
+    await storage.createBox({
       orderId: o2.id,
       manualOrderNumber: o2.number,
       numberInOrder: '2/10',
       quantity: 1200,
       locationType: 'permanent',
       locationId: 2,
+      status: 'in_stock',
+      productPhotos: [],
+      stickerPhoto: null,
+      problemType: null,
+      problemDesc: null,
+      createdBy: 1,
+      shippedBy: null
+    });
+
+    const o3 = await storage.createOrder({ number: 'ORD-1003', customer: 'Cyberdyne', status: 'active' });
+    await storage.createBox({
+      orderId: o3.id,
+      manualOrderNumber: o3.number,
+      numberInOrder: '1/1',
+      quantity: 50,
+      locationType: 'permanent',
+      locationId: 3,
       status: 'in_stock',
       productPhotos: [],
       stickerPhoto: null,
