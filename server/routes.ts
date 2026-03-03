@@ -298,116 +298,139 @@ export async function registerRoutes(
 
 async function seedDatabase() {
   const existingLocs = await storage.getLocations();
+  let locs = existingLocs;
   if (existingLocs.length === 0) {
-    await storage.createLocation({ name: 'Rack A, Shelf 1', qrUuid: 'loc-a1', isActive: true });
-    await storage.createLocation({ name: 'Rack A, Shelf 2', qrUuid: 'loc-a2', isActive: true });
-    await storage.createLocation({ name: 'Loading Dock', qrUuid: 'loc-dock', isActive: true });
+    const l1 = await storage.createLocation({ name: 'Rack A, Shelf 1', qrUuid: 'loc-a1', isActive: true });
+    const l2 = await storage.createLocation({ name: 'Rack A, Shelf 2', qrUuid: 'loc-a2', isActive: true });
+    const l3 = await storage.createLocation({ name: 'Loading Dock', qrUuid: 'loc-dock', isActive: true });
+    locs = [l1, l2, l3];
     console.log('Seeded locations');
   }
 
   const existingOrders = await storage.getOrders();
-  if (existingOrders.length === 0) {
-    const o1 = await storage.createOrder({ number: 'ORD-1001', customer: 'Acme Corp', status: 'active' });
-    const o2 = await storage.createOrder({ number: 'ORD-1002', customer: 'Globex', status: 'active' });
-    console.log('Seeded orders');
+  // FORCE RE-SEEDING OF BOXES IF THEY ARE MISSING
+  const existingBoxes = await storage.getBoxes();
+  
+  if (existingOrders.length === 0 || existingBoxes.length === 0) {
+    // Clear potentially partial data to avoid unique constraint violations on orders
+    if (existingOrders.length > 0) {
+       // We can't easily delete via storage without more methods, 
+       // but we can try to find the orders or just proceed if number is unique
+    }
 
-    // Add mock boxes for testing shipping
-    await storage.createBox({
-      orderId: o1.id,
-      manualOrderNumber: o1.number,
-      numberInOrder: '1/3',
-      quantity: 500,
-      locationType: 'permanent',
-      locationId: 1,
-      status: 'in_stock',
-      productPhotos: [],
-      stickerPhoto: null,
-      problemType: null,
-      problemDesc: null,
-      createdBy: 1,
-      shippedBy: null
-    });
+    let o1, o2, o3;
+    
+    const findOrCreateOrder = async (num: string, cust: string) => {
+      const existing = await storage.getOrders('active', num);
+      const match = existing.find(o => o.number === num);
+      if (match) return match;
+      return await storage.createOrder({ number: num, customer: cust, status: 'active' });
+    };
 
-    await storage.createBox({
-      orderId: o1.id,
-      manualOrderNumber: o1.number,
-      numberInOrder: '2/3',
-      quantity: 300,
-      locationType: 'permanent',
-      locationId: 2,
-      status: 'in_stock',
-      productPhotos: [],
-      stickerPhoto: null,
-      problemType: null,
-      problemDesc: null,
-      createdBy: 1,
-      shippedBy: null
-    });
+    o1 = await findOrCreateOrder('ORD-1001', 'Acme Corp');
+    o2 = await findOrCreateOrder('ORD-1002', 'Globex');
+    o3 = await findOrCreateOrder('ORD-1003', 'Cyberdyne');
+    
+    console.log('Orders ready for boxes');
 
-    await storage.createBox({
-      orderId: o1.id,
-      manualOrderNumber: o1.number,
-      numberInOrder: '3/3',
-      quantity: 200,
-      locationType: 'temporary',
-      tempLocationDesc: 'Near exit',
-      status: 'in_stock',
-      productPhotos: [],
-      stickerPhoto: null,
-      problemType: null,
-      problemDesc: null,
-      createdBy: 1,
-      shippedBy: null
-    });
+    if (existingBoxes.length === 0) {
+      // Add mock boxes for testing shipping
+      await storage.createBox({
+        orderId: o1.id,
+        manualOrderNumber: o1.number,
+        numberInOrder: '1/3',
+        quantity: 500,
+        locationType: 'permanent',
+        locationId: locs[0].id,
+        status: 'in_stock',
+        productPhotos: [],
+        stickerPhoto: null,
+        problemType: null,
+        problemDesc: null,
+        createdBy: 1,
+        shippedBy: null
+      });
 
-    await storage.createBox({
-      orderId: o2.id,
-      manualOrderNumber: o2.number,
-      numberInOrder: '1/10',
-      quantity: 1000,
-      locationType: 'permanent',
-      locationId: 1,
-      status: 'in_stock',
-      productPhotos: [],
-      stickerPhoto: null,
-      problemType: null,
-      problemDesc: null,
-      createdBy: 1,
-      shippedBy: null
-    });
+      await storage.createBox({
+        orderId: o1.id,
+        manualOrderNumber: o1.number,
+        numberInOrder: '2/3',
+        quantity: 300,
+        locationType: 'permanent',
+        locationId: locs[1].id,
+        status: 'in_stock',
+        productPhotos: [],
+        stickerPhoto: null,
+        problemType: null,
+        problemDesc: null,
+        createdBy: 1,
+        shippedBy: null
+      });
 
-    await storage.createBox({
-      orderId: o2.id,
-      manualOrderNumber: o2.number,
-      numberInOrder: '2/10',
-      quantity: 1200,
-      locationType: 'permanent',
-      locationId: 2,
-      status: 'in_stock',
-      productPhotos: [],
-      stickerPhoto: null,
-      problemType: null,
-      problemDesc: null,
-      createdBy: 1,
-      shippedBy: null
-    });
+      await storage.createBox({
+        orderId: o1.id,
+        manualOrderNumber: o1.number,
+        numberInOrder: '3/3',
+        quantity: 200,
+        locationType: 'temporary',
+        tempLocationDesc: 'Near exit',
+        status: 'in_stock',
+        productPhotos: [],
+        stickerPhoto: null,
+        problemType: null,
+        problemDesc: null,
+        createdBy: 1,
+        shippedBy: null
+      });
 
-    const o3 = await storage.createOrder({ number: 'ORD-1003', customer: 'Cyberdyne', status: 'active' });
-    await storage.createBox({
-      orderId: o3.id,
-      manualOrderNumber: o3.number,
-      numberInOrder: '1/1',
-      quantity: 50,
-      locationType: 'permanent',
-      locationId: 3,
-      status: 'in_stock',
-      productPhotos: [],
-      stickerPhoto: null,
-      problemType: null,
-      problemDesc: null,
-      createdBy: 1,
-      shippedBy: null
-    });
-    console.log('Seeded mock boxes');
+      await storage.createBox({
+        orderId: o2.id,
+        manualOrderNumber: o2.number,
+        numberInOrder: '1/10',
+        quantity: 1000,
+        locationType: 'permanent',
+        locationId: locs[0].id,
+        status: 'in_stock',
+        productPhotos: [],
+        stickerPhoto: null,
+        problemType: null,
+        problemDesc: null,
+        createdBy: 1,
+        shippedBy: null
+      });
+
+      await storage.createBox({
+        orderId: o2.id,
+        manualOrderNumber: o2.number,
+        numberInOrder: '2/10',
+        quantity: 1200,
+        locationType: 'permanent',
+        locationId: locs[1].id,
+        status: 'in_stock',
+        productPhotos: [],
+        stickerPhoto: null,
+        problemType: null,
+        problemDesc: null,
+        createdBy: 1,
+        shippedBy: null
+      });
+
+      await storage.createBox({
+        orderId: o3.id,
+        manualOrderNumber: o3.number,
+        numberInOrder: '1/1',
+        quantity: 50,
+        locationType: 'permanent',
+        locationId: locs[2].id,
+        status: 'in_stock',
+        productPhotos: [],
+        stickerPhoto: null,
+        problemType: null,
+        problemDesc: null,
+        createdBy: 1,
+        shippedBy: null
+      });
+      console.log('Seeded mock boxes');
+    }
   }
 }
