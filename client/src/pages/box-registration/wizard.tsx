@@ -188,20 +188,47 @@ export default function BoxRegistrationWizard() {
         logger: m => console.log(m),
         errorHandler: err => console.error("Worker Error:", err)
       });
+      
+      // Set parameters for better numeric recognition if needed
+      await worker.setParameters({
+        tessedit_char_whitelist: '0123456789/\\qtyкол-воколичество#: ',
+      });
+
       const { data: { text } } = await worker.recognize(src);
       console.log("OCR Result:", text);
       
+      const cleanText = text.toLowerCase();
       let foundAny = false;
-      const qtyMatch = text.match(/(?:qty|кол-во|количество)?[:\s]*(\d+)/i);
-      if (qtyMatch) {
-        setFormData(prev => ({ ...prev, quantity: qtyMatch[1] }));
-        foundAny = true;
+
+      // 1. Try to find Quantity (e.g., "Qty: 500", "Кол-во: 100", "500 pcs")
+      const qtyPatterns = [
+        /(?:qty|кол-во|количество|pcs|шт)[:\s#]*(\d+)/i,
+        /(\d+)\s*(?:pcs|шт)/i,
+        /^[^\d]*(\d+)[^\d]*$/m // fallback: if there's only one large number on a line
+      ];
+
+      for (const pattern of qtyPatterns) {
+        const match = cleanText.match(pattern);
+        if (match) {
+          setFormData(prev => ({ ...prev, quantity: match[1] }));
+          foundAny = true;
+          break;
+        }
       }
       
-      const boxNumMatch = text.match(/(\d+[\/\\]\d+)/);
-      if (boxNumMatch) {
-        setFormData(prev => ({ ...prev, numberInOrder: boxNumMatch[1] }));
-        foundAny = true;
+      // 2. Try to find Box Number (e.g., "1/5", "3 \ 10", "Box: 2/2")
+      const boxPatterns = [
+        /(\d+)\s*[\/\\]\s*(\d+)/,
+        /(?:box|коробка|№)[:\s]*(\d+)\s*[\/\\]\s*(\d+)/i
+      ];
+
+      for (const pattern of boxPatterns) {
+        const match = cleanText.match(pattern);
+        if (match) {
+          setFormData(prev => ({ ...prev, numberInOrder: `${match[1]}/${match[2]}` }));
+          foundAny = true;
+          break;
+        }
       }
 
       if (!foundAny) {
