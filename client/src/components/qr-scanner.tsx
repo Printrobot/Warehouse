@@ -52,7 +52,7 @@ export function QrScanner({ onScan, onError, label = "Scan QR Code" }: QrScanner
           (error) => {
             // Do not propagate noisy scanning errors to the parent
             // especially "No MultiFormat Readers" which is normal during search
-            if (typeof error === 'string' && error.includes("No MultiFormat Readers")) {
+            if (typeof error === 'string' && (error.includes("No MultiFormat Readers") || error.includes("NotFoundException"))) {
               return;
             }
             if (onError && typeof error === 'string') onError(error);
