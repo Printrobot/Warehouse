@@ -237,6 +237,33 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/boxes/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const input = insertBoxSchema.partial().parse(req.body);
+      const box = await storage.updateBox(id, input);
+      
+      // Audit
+      // @ts-ignore
+      if (req.session.userId) {
+        // @ts-ignore
+        const user = await storage.getUser(req.session.userId);
+        await storage.createAuditLog({
+            userId: user!.id,
+            userName: user!.name,
+            actionType: 'update',
+            entityType: 'box',
+            entityId: String(box.id),
+            details: { updates: input }
+        });
+      }
+
+      res.json(box);
+    } catch (e) {
+      res.status(400).json({ message: "Invalid input" });
+    }
+  });
+
   app.patch(api.boxes.ship.path, async (req, res) => {
     try {
       const id = parseInt(req.params.id);

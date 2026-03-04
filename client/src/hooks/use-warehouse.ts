@@ -113,7 +113,33 @@ export function useCompleteOrder() {
   });
 }
 
-// === BOXES ===
+export function useUpdateBox() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { t } = useLanguage();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const res = await fetch(`/api/boxes/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to update box");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.orders.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.orders.get.path] });
+      toast({ title: t("common.success") || "Success", description: "Box updated" });
+    },
+    onError: (err: any) => {
+      toast({ title: t("common.error") || "Error", description: err.message, variant: "destructive" });
+    }
+  });
+}
+
 export function useBoxes() {
   return useQuery({
     queryKey: [api.boxes.list.path],

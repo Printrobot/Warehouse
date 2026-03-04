@@ -17,6 +17,114 @@ import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { useLanguage } from "@/hooks/use-language";
 
+function BoxImageGallery({ photos, title }: { photos: string[], title: string }) {
+  const { t } = useLanguage();
+  if (!photos || photos.length === 0) return null;
+  
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1">
+          <Plus className="w-3 h-3" /> {t("boxes.view_photos") || "Photos"} ({photos.length})
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-3xl bg-white dark:bg-slate-900">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 max-h-[70vh] overflow-y-auto p-1">
+          {photos.map((src, idx) => (
+            <div key={idx} className="relative aspect-video bg-black/5 rounded-lg overflow-hidden border">
+              <img src={src} alt={`Photo ${idx + 1}`} className="w-full h-full object-contain" />
+            </div>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditBoxDialog({ box, orderId }: { box: any, orderId: number }) {
+  const { t } = useLanguage();
+  const { toast } = useToast();
+  const updateBox = useUpdateOrder(); // We'll use a generic mutation or specific one if exists
+  const [isOpen, setIsOpen] = useState(false);
+  
+  // Using a local mutation for box update
+  const { mutate: updateBoxMutate, isPending } = useUpdateBox();
+
+  const form = useForm({
+    defaultValues: {
+      numberInOrder: box.numberInOrder,
+      quantity: box.quantity.toString(),
+    }
+  });
+
+  const onSubmit = (data: any) => {
+    updateBoxMutate({ 
+      id: box.id, 
+      data: { 
+        numberInOrder: data.numberInOrder,
+        quantity: parseInt(data.quantity) || 0
+      } 
+    }, {
+      onSuccess: () => {
+        setIsOpen(false);
+        toast({ title: "Success", description: "Box updated" });
+      }
+    });
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+          <Plus className="w-4 h-4 rotate-45" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="bg-white dark:bg-slate-900">
+        <DialogHeader>
+          <DialogTitle>{t("boxes.edit") || "Edit Box"} {box.numberInOrder}</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="numberInOrder"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("boxes.number")}</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="quantity"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("boxes.quantity")}</FormLabel>
+                  <FormControl>
+                    <Input type="number" {...field} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            <DialogFooter>
+              <Button type="submit" disabled={isPending} className="h-12 w-full">
+                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {t("common.save")}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function OrderBoxesList({ orderId }: { orderId: number }) {
   const { t } = useLanguage();
   const { data: order, isLoading } = useOrder(orderId);
@@ -31,7 +139,10 @@ function OrderBoxesList({ orderId }: { orderId: number }) {
           <Card key={box.id} className="overflow-hidden border shadow-sm">
             <CardContent className="p-3 space-y-2">
               <div className="flex justify-between items-start">
-                <span className="text-xs font-semibold uppercase text-muted-foreground">{t("boxes.number")}: {box.numberInOrder}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold uppercase text-muted-foreground">{t("boxes.number")}: {box.numberInOrder}</span>
+                  <EditBoxDialog box={box} orderId={orderId} />
+                </div>
                 <Badge variant={box.status === "in_stock" ? "outline" : "secondary"} className="text-[10px] h-5">
                   {box.status}
                 </Badge>
@@ -42,6 +153,14 @@ function OrderBoxesList({ orderId }: { orderId: number }) {
               </div>
               <div className="text-[11px] text-muted-foreground truncate italic">
                 {box.locationType === 'permanent' ? 'Rack/Shelf' : 'Temporary Location'}
+              </div>
+              <div className="flex gap-2 pt-1 border-t mt-1">
+                {box.stickerPhoto && (
+                  <BoxImageGallery photos={[box.stickerPhoto]} title={`${t("boxes.sticker") || "Sticker"} - ${box.numberInOrder}`} />
+                )}
+                {box.productPhotos && box.productPhotos.length > 0 && (
+                  <BoxImageGallery photos={box.productPhotos} title={`${t("boxes.contents") || "Contents"} - ${box.numberInOrder}`} />
+                )}
               </div>
             </CardContent>
           </Card>

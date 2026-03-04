@@ -89,6 +89,13 @@ const translations = {
     "common.next": "Next",
     "common.submit": "Submit",
     "common.loading": "Loading...",
+    "boxes.number": "Box Number",
+    "boxes.quantity": "Quantity",
+    "boxes.qty_unit": "pcs",
+    "boxes.view_photos": "View Photos",
+    "boxes.sticker": "Sticker",
+    "boxes.contents": "Contents",
+    "boxes.edit": "Edit Box",
   },
   ru: {
     "nav.dashboard": "Панель",
@@ -170,6 +177,13 @@ const translations = {
     "common.next": "Далее",
     "common.submit": "Отправить",
     "common.loading": "Загрузка...",
+    "boxes.number": "Номер коробки",
+    "boxes.quantity": "Количество",
+    "boxes.qty_unit": "шт",
+    "boxes.view_photos": "Просмотр фото",
+    "boxes.sticker": "Наклейка",
+    "boxes.contents": "Содержимое",
+    "boxes.edit": "Редактировать коробку",
   }
 };
 
