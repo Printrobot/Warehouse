@@ -1,0 +1,40 @@
+#reader {
+  border: none !important;
+}
+
+#reader__status_span {
+  display: none !important;
+}
+
+#reader__dashboard_section_csr span {
+  display: none !important;
+}
+
+#reader__dashboard_section_csr button {
+  background-color: hsl(var(--primary)) !important;
+  color: white !important;
+  border: none !important;
+  padding: 8px 16px !important;
+  border-radius: var(--radius) !important;
+  font-weight: bold !important;
+  text-transform: uppercase !important;
+  font-size: 14px !important;
+  margin-top: 10px !important;
+}
+
+#reader video {
+  border-radius: var(--radius) !important;
+  object-fit: cover !important;
+}
+
+#reader img[alt="Camera based scan"] {
+  display: none !important;
+}
+
+div[id^="reader__notification"] {
+  display: none !important;
+}
+
+#reader__header_message {
+  display: none !important;
+}

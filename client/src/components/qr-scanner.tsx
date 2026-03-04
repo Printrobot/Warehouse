@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import { Button } from "@/components/ui/button";
 import { Scan, X } from "lucide-react";
+import "./qr-scanner.css";
 
 interface QrScannerProps {
   onScan: (data: string) => void;
@@ -50,12 +51,8 @@ export function QrScanner({ onScan, onError, label = "Scan QR Code" }: QrScanner
             stopScanning();
           },
           (error) => {
-            // Do not propagate noisy scanning errors to the parent
-            // especially "No MultiFormat Readers" which is normal during search
-            if (typeof error === 'string' && (error.includes("No MultiFormat Readers") || error.includes("NotFoundException"))) {
-              return;
-            }
-            if (onError && typeof error === 'string') onError(error);
+            // Silently ignore all scanning errors during search
+            return;
           }
         );
         scannerRef.current = scanner;
