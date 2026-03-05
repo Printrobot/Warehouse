@@ -138,19 +138,82 @@ function OrderBoxesList({ orderId }: { orderId: number }) {
   const { t } = useLanguage();
   const { data: order, isLoading } = useOrder(orderId);
 
+  const [selectedBoxes, setSelectedBoxes] = useState<Set<number>>(new Set());
+
+  const toggleBoxSelection = (id: number) => {
+    const next = new Set(selectedBoxes);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedBoxes(next);
+  };
+
+  const shipSelectedBoxes = useShipBox();
+  
+  const handleBulkShip = () => {
+    if (selectedBoxes.size === 0) return;
+    if (confirm(`Ship ${selectedBoxes.size} selected boxes?`)) {
+      Array.from(selectedBoxes).forEach(id => {
+        shipSelectedBoxes.mutate(id);
+      });
+      setSelectedBoxes(new Set());
+    }
+  };
+
   if (isLoading) return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   if (!order?.boxes || order.boxes.length === 0) return <div className="text-center py-12 text-muted-foreground bg-slate-50 rounded-xl m-4 border-2 border-dashed">{t("orders.no_boxes") || "No boxes found"}</div>;
 
+  const inStockBoxes = order.boxes.filter(b => b.status === "in_stock");
+
   return (
     <div className="p-6 bg-slate-50/80 dark:bg-slate-900/80 border-y-2 backdrop-blur-sm">
+      <div className="flex justify-between items-center mb-4 px-2">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="h-8 px-3 font-bold border-2">
+            Selected: {selectedBoxes.size}
+          </Badge>
+          {selectedBoxes.size > 0 && (
+            <Button 
+              size="sm" 
+              variant="default" 
+              className="h-8 px-4 gap-2 bg-green-600 hover:bg-green-700 font-bold uppercase tracking-tight"
+              onClick={handleBulkShip}
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              Ship Selected
+            </Button>
+          )}
+        </div>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="text-primary font-bold uppercase tracking-tight text-xs"
+          onClick={() => {
+            if (selectedBoxes.size === inStockBoxes.length) setSelectedBoxes(new Set());
+            else setSelectedBoxes(new Set(inStockBoxes.map(b => b.id)));
+          }}
+        >
+          {selectedBoxes.size === inStockBoxes.length ? "Deselect All" : "Select All In Stock"}
+        </Button>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {order.boxes.map((box) => (
-          <Card key={box.id} className="overflow-hidden border-2 shadow-md hover:shadow-lg transition-all duration-300 group bg-white dark:bg-slate-900">
+          <Card 
+            key={box.id} 
+            className={cn(
+              "overflow-hidden border-2 shadow-md hover:shadow-lg transition-all duration-300 group bg-white dark:bg-slate-900 cursor-pointer relative",
+              selectedBoxes.has(box.id) ? "border-primary ring-2 ring-primary/20" : ""
+            )}
+            onClick={() => box.status === 'in_stock' && toggleBoxSelection(box.id)}
+          >
             <CardContent className="p-4 space-y-4">
               <div className="flex justify-between items-center border-b pb-3">
                 <div className="flex items-center gap-3">
-                  <div className="bg-primary/10 p-2 rounded-lg">
-                    <BoxIcon className="w-5 h-5 text-primary" />
+                  <div className={cn(
+                    "p-2 rounded-lg",
+                    selectedBoxes.has(box.id) ? "bg-primary text-white" : "bg-primary/10 text-primary"
+                  )}>
+                    <BoxIcon className="w-5 h-5" />
                   </div>
                   <span className="text-sm font-black uppercase tracking-tighter text-slate-500">{t("boxes.number")}: <span className="text-slate-900 dark:text-white text-lg">{box.numberInOrder}</span></span>
                 </div>

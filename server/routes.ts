@@ -361,6 +361,16 @@ async function seedDatabase() {
     console.log('Orders ready for boxes');
 
     if (existingBoxes.length === 0) {
+      const placeholderImages = [
+        "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=800",
+        "https://images.unsplash.com/photo-1549194382-346a85f0adec?auto=format&fit=crop&q=80&w=800",
+        "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&q=80&w=800"
+      ];
+      const stickerImages = [
+        "https://images.unsplash.com/photo-1621341103006-8c01476100ba?auto=format&fit=crop&q=80&w=800",
+        "https://images.unsplash.com/photo-1620288627223-53302f4e8c74?auto=format&fit=crop&q=80&w=800"
+      ];
+
       // Add mock boxes for testing shipping
       await storage.createBox({
         orderId: o1.id,
@@ -370,8 +380,8 @@ async function seedDatabase() {
         locationType: 'permanent',
         locationId: locs[0].id,
         status: 'in_stock',
-        productPhotos: [],
-        stickerPhoto: null,
+        productPhotos: [placeholderImages[0]],
+        stickerPhoto: stickerImages[0],
         problemType: null,
         problemDesc: null,
         createdBy: 1,
@@ -386,8 +396,8 @@ async function seedDatabase() {
         locationType: 'permanent',
         locationId: locs[1].id,
         status: 'in_stock',
-        productPhotos: [],
-        stickerPhoto: null,
+        productPhotos: [placeholderImages[1]],
+        stickerPhoto: stickerImages[1],
         problemType: null,
         problemDesc: null,
         createdBy: 1,
@@ -402,8 +412,8 @@ async function seedDatabase() {
         locationType: 'temporary',
         tempLocationDesc: 'Near exit',
         status: 'in_stock',
-        productPhotos: [],
-        stickerPhoto: null,
+        productPhotos: [placeholderImages[2]],
+        stickerPhoto: stickerImages[0],
         problemType: null,
         problemDesc: null,
         createdBy: 1,
@@ -418,8 +428,8 @@ async function seedDatabase() {
         locationType: 'permanent',
         locationId: locs[0].id,
         status: 'in_stock',
-        productPhotos: [],
-        stickerPhoto: null,
+        productPhotos: [placeholderImages[0]],
+        stickerPhoto: stickerImages[1],
         problemType: null,
         problemDesc: null,
         createdBy: 1,
@@ -434,8 +444,8 @@ async function seedDatabase() {
         locationType: 'permanent',
         locationId: locs[1].id,
         status: 'in_stock',
-        productPhotos: [],
-        stickerPhoto: null,
+        productPhotos: [placeholderImages[1]],
+        stickerPhoto: stickerImages[0],
         problemType: null,
         problemDesc: null,
         createdBy: 1,
@@ -450,8 +460,8 @@ async function seedDatabase() {
         locationType: 'permanent',
         locationId: locs[2].id,
         status: 'in_stock',
-        productPhotos: [],
-        stickerPhoto: null,
+        productPhotos: [placeholderImages[2]],
+        stickerPhoto: stickerImages[1],
         problemType: null,
         problemDesc: null,
         createdBy: 1,
