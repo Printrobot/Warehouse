@@ -3,9 +3,9 @@ import { api, buildUrl } from "@shared/routes";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, Search, Plus, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, CheckCircle2, Search, Plus, ChevronDown, ChevronUp, Pencil, Camera, Box as BoxIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useCompleteOrder, useCreateOrder, useUpdateOrder, useOrder } from "@/hooks/use-warehouse";
+import { useCompleteOrder, useCreateOrder, useUpdateOrder, useOrder, useUpdateBox } from "@/hooks/use-warehouse";
 import React, { useState, Fragment } from "react";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
@@ -16,26 +16,35 @@ import { insertOrderSchema } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { useLanguage } from "@/hooks/use-language";
+import { cn } from "@/lib/utils";
 
-function BoxImageGallery({ photos, title }: { photos: string[], title: string }) {
+function BoxImageGallery({ photos, title, icon: Icon }: { photos: string[], title: string, icon: any }) {
   const { t } = useLanguage();
   if (!photos || photos.length === 0) return null;
   
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 px-2 text-xs gap-1">
-          <Plus className="w-3 h-3" /> {t("boxes.view_photos") || "Photos"} ({photos.length})
+        <Button variant="outline" size="sm" className="h-9 px-3 text-xs gap-2 border-primary/20 hover:border-primary hover:bg-primary/5 transition-all">
+          <Icon className="w-4 h-4 text-primary" />
+          <span className="font-semibold">{t("boxes.view_photos") || "Photos"}</span>
+          <Badge variant="secondary" className="h-5 px-1.5 min-w-[20px] justify-center bg-primary/10 text-primary border-none">{photos.length}</Badge>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-3xl bg-white dark:bg-slate-900">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+      <DialogContent className="max-w-4xl bg-white dark:bg-slate-900 border-2">
+        <DialogHeader className="border-b pb-4">
+          <DialogTitle className="text-xl flex items-center gap-2">
+            <Icon className="w-5 h-5 text-primary" />
+            {title}
+          </DialogTitle>
         </DialogHeader>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 max-h-[70vh] overflow-y-auto p-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 max-h-[75vh] overflow-y-auto p-2">
           {photos.map((src, idx) => (
-            <div key={idx} className="relative aspect-video bg-black/5 rounded-lg overflow-hidden border">
-              <img src={src} alt={`Photo ${idx + 1}`} className="w-full h-full object-contain" />
+            <div key={idx} className="relative aspect-video bg-slate-900 rounded-xl overflow-hidden border-2 shadow-inner group">
+              <img src={src} alt={`Photo ${idx + 1}`} className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105" />
+              <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider">
+                Photo {idx + 1}
+              </div>
             </div>
           ))}
         </div>
@@ -44,13 +53,10 @@ function BoxImageGallery({ photos, title }: { photos: string[], title: string })
   );
 }
 
-function EditBoxDialog({ box, orderId }: { box: any, orderId: number }) {
+function EditBoxDialog({ box }: { box: any }) {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const updateBox = useUpdateOrder(); // We'll use a generic mutation or specific one if exists
   const [isOpen, setIsOpen] = useState(false);
-  
-  // Using a local mutation for box update
   const { mutate: updateBoxMutate, isPending } = useUpdateBox();
 
   const form = useForm({
@@ -78,24 +84,27 @@ function EditBoxDialog({ box, orderId }: { box: any, orderId: number }) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-          <Plus className="w-4 h-4 rotate-45" />
+        <Button variant="ghost" size="sm" className="h-10 w-10 p-0 hover:bg-primary/10 hover:text-primary transition-colors rounded-full">
+          <Pencil className="w-4 h-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-white dark:bg-slate-900">
-        <DialogHeader>
-          <DialogTitle>{t("boxes.edit") || "Edit Box"} {box.numberInOrder}</DialogTitle>
+      <DialogContent className="bg-white dark:bg-slate-900 border-2">
+        <DialogHeader className="border-b pb-4">
+          <DialogTitle className="text-xl flex items-center gap-2">
+            <BoxIcon className="w-5 h-5 text-primary" />
+            {t("boxes.edit") || "Edit Box"} {box.numberInOrder}
+          </DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
             <FormField
               control={form.control}
               name="numberInOrder"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("boxes.number")}</FormLabel>
+                  <FormLabel className="text-base font-bold uppercase tracking-tight text-muted-foreground">{t("boxes.number")}</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} className="h-14 text-xl font-bold bg-slate-50 border-2 focus:border-primary" />
                   </FormControl>
                 </FormItem>
               )}
@@ -105,16 +114,16 @@ function EditBoxDialog({ box, orderId }: { box: any, orderId: number }) {
               name="quantity"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("boxes.quantity")}</FormLabel>
+                  <FormLabel className="text-base font-bold uppercase tracking-tight text-muted-foreground">{t("boxes.quantity")}</FormLabel>
                   <FormControl>
-                    <Input type="number" {...field} />
+                    <Input type="number" {...field} className="h-14 text-xl font-bold bg-slate-50 border-2 focus:border-primary" />
                   </FormControl>
                 </FormItem>
               )}
             />
-            <DialogFooter>
-              <Button type="submit" disabled={isPending} className="h-12 w-full">
-                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <DialogFooter className="pt-4">
+              <Button type="submit" disabled={isPending} className="h-14 w-full text-lg font-bold uppercase tracking-wider">
+                {isPending && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                 {t("common.save")}
               </Button>
             </DialogFooter>
@@ -129,37 +138,55 @@ function OrderBoxesList({ orderId }: { orderId: number }) {
   const { t } = useLanguage();
   const { data: order, isLoading } = useOrder(orderId);
 
-  if (isLoading) return <div className="flex justify-center p-4"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
-  if (!order?.boxes || order.boxes.length === 0) return <div className="text-center py-4 text-sm text-muted-foreground">{t("orders.no_boxes") || "No boxes found"}</div>;
+  if (isLoading) return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (!order?.boxes || order.boxes.length === 0) return <div className="text-center py-12 text-muted-foreground bg-slate-50 rounded-xl m-4 border-2 border-dashed">{t("orders.no_boxes") || "No boxes found"}</div>;
 
   return (
-    <div className="p-4 bg-slate-50/50 dark:bg-slate-900/50 border-y">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+    <div className="p-6 bg-slate-50/80 dark:bg-slate-900/80 border-y-2 backdrop-blur-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {order.boxes.map((box) => (
-          <Card key={box.id} className="overflow-hidden border shadow-sm">
-            <CardContent className="p-3 space-y-2">
-              <div className="flex justify-between items-start">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold uppercase text-muted-foreground">{t("boxes.number")}: {box.numberInOrder}</span>
-                  <EditBoxDialog box={box} orderId={orderId} />
+          <Card key={box.id} className="overflow-hidden border-2 shadow-md hover:shadow-lg transition-all duration-300 group bg-white dark:bg-slate-900">
+            <CardContent className="p-4 space-y-4">
+              <div className="flex justify-between items-center border-b pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="bg-primary/10 p-2 rounded-lg">
+                    <BoxIcon className="w-5 h-5 text-primary" />
+                  </div>
+                  <span className="text-sm font-black uppercase tracking-tighter text-slate-500">{t("boxes.number")}: <span className="text-slate-900 dark:text-white text-lg">{box.numberInOrder}</span></span>
                 </div>
-                <Badge variant={box.status === "in_stock" ? "outline" : "secondary"} className="text-[10px] h-5">
-                  {box.status}
-                </Badge>
+                <div className="flex items-center gap-1">
+                  <EditBoxDialog box={box} />
+                  <Badge variant={box.status === "in_stock" ? "default" : "secondary"} className={cn(
+                    "h-6 px-2 font-black uppercase text-[10px] tracking-widest",
+                    box.status === "in_stock" ? "bg-green-500 hover:bg-green-600" : ""
+                  )}>
+                    {box.status}
+                  </Badge>
+                </div>
               </div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-lg font-bold">{box.quantity}</span>
-                <span className="text-xs text-muted-foreground">{t("boxes.qty_unit") || "pcs"}</span>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">{t("boxes.quantity")}</div>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-3xl font-black tabular-nums tracking-tighter">{box.quantity}</span>
+                    <span className="text-sm font-bold text-muted-foreground uppercase">{t("boxes.qty_unit") || "pcs"}</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Location</div>
+                  <div className="text-sm font-bold px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full border shadow-sm">
+                    {box.locationType === 'permanent' ? 'Rack/Shelf' : 'Temporary'}
+                  </div>
+                </div>
               </div>
-              <div className="text-[11px] text-muted-foreground truncate italic">
-                {box.locationType === 'permanent' ? 'Rack/Shelf' : 'Temporary Location'}
-              </div>
-              <div className="flex gap-2 pt-1 border-t mt-1">
+
+              <div className="flex flex-wrap gap-2 pt-2 border-t border-dashed">
                 {box.stickerPhoto && (
-                  <BoxImageGallery photos={[box.stickerPhoto]} title={`${t("boxes.sticker") || "Sticker"} - ${box.numberInOrder}`} />
+                  <BoxImageGallery photos={[box.stickerPhoto]} icon={Camera} title={`${t("boxes.sticker") || "Sticker"} - ${box.numberInOrder}`} />
                 )}
                 {box.productPhotos && box.productPhotos.length > 0 && (
-                  <BoxImageGallery photos={box.productPhotos} title={`${t("boxes.contents") || "Contents"} - ${box.numberInOrder}`} />
+                  <BoxImageGallery photos={box.productPhotos} icon={Camera} title={`${t("boxes.contents") || "Contents"} - ${box.numberInOrder}`} />
                 )}
               </div>
             </CardContent>
