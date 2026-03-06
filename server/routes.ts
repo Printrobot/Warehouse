@@ -200,11 +200,33 @@ export async function registerRoutes(
   app.patch(api.orders.get.path, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const input = insertOrderSchema.partial().parse(req.body);
-      const order = await storage.updateOrder(id, input);
+      const data = req.body;
+      
+      // If we are resetting status to active, also clear completedAt
+      if (data.status === 'active') {
+        data.completedAt = null;
+      }
+      
+      const order = await storage.updateOrder(id, data);
+      
+      // Audit
+      // @ts-ignore
+      if (req.session.userId) {
+        // @ts-ignore
+        const user = await storage.getUser(req.session.userId);
+        await storage.createAuditLog({
+            userId: user!.id,
+            userName: user!.name,
+            actionType: 'update',
+            entityType: 'order',
+            entityId: String(order.id),
+            details: data
+        });
+      }
+
       res.json(order);
-    } catch (e) {
-      res.status(400).json({ message: "Invalid input" });
+    } catch (e: any) {
+      res.status(400).json({ message: e.message || "Invalid input" });
     }
   });
 
