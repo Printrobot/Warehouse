@@ -440,10 +440,10 @@ export default function OrdersList() {
                       <Button 
                         size="sm" 
                         variant="ghost" 
-                        className="h-10 w-10 p-0"
+                        className="h-10 w-10 p-0 hover:bg-primary/10 hover:text-primary transition-colors rounded-full"
                         onClick={() => handleEdit(order)}
                       >
-                        <Plus className="w-5 h-5 rotate-45" />
+                        <Pencil className="w-5 h-5" />
                       </Button>
                       {order.status === "active" && (
                         <Button 
@@ -451,14 +451,14 @@ export default function OrdersList() {
                           variant="outline"
                           className="h-10 px-3 gap-1.5 border-green-200 hover:bg-green-50 hover:text-green-700 dark:border-green-900 dark:hover:bg-green-900/20"
                           onClick={() => {
-                            if (confirm(t("orders.confirm_complete") || "Are you sure you want to complete this order?")) {
+                            if (confirm(t("orders.confirm_complete") || "Вы уверены, что хотите перевести этот заказ в статус 'Выполнен'?")) {
                               completeOrder.mutate(order.id);
                             }
                           }}
                           disabled={completeOrder.isPending}
                         >
                           <CheckCircle2 className="w-4 h-4" />
-                          <span className="hidden sm:inline">{t("orders.complete")}</span>
+                          <span className="hidden sm:inline">{t("orders.complete") || "В выполненные"}</span>
                         </Button>
                       )}
                     </TableCell>
