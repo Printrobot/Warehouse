@@ -3,7 +3,7 @@ import { api, buildUrl } from "@shared/routes";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, Search, Plus, ChevronDown, ChevronUp, Pencil, Camera, Box as BoxIcon } from "lucide-react";
+import { Loader2, CheckCircle2, Search, Plus, ChevronDown, ChevronUp, Pencil, Camera, Box as BoxIcon, RotateCcw, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCompleteOrder, useCreateOrder, useUpdateOrder, useOrder, useUpdateBox, useShipBox } from "@/hooks/use-warehouse";
 import React, { useState, Fragment } from "react";
@@ -163,9 +163,16 @@ function OrderBoxesList({ orderId }: { orderId: number }) {
   if (!order?.boxes || order.boxes.length === 0) return <div className="text-center py-12 text-muted-foreground bg-slate-50 rounded-xl m-4 border-2 border-dashed">{t("orders.no_boxes") || "No boxes found"}</div>;
 
   const inStockBoxes = order.boxes.filter(b => b.status === "in_stock");
+  const hasProblemBoxes = order.boxes.some(b => b.problemType);
 
   return (
     <div className="p-6 bg-slate-50/80 dark:bg-slate-900/80 border-y-2 backdrop-blur-sm">
+      {hasProblemBoxes && (
+        <div className="mx-2 mb-4 p-3 bg-amber-50 border-2 border-amber-200 rounded-lg flex items-center gap-3 text-amber-800 animate-pulse">
+          <AlertTriangle className="w-5 h-5 shrink-0" />
+          <span className="text-sm font-bold uppercase tracking-tight">Внимание: В этом заказе есть коробки с проблемами!</span>
+        </div>
+      )}
       <div className="flex justify-between items-center mb-4 px-2">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="h-8 px-3 font-bold border-2">
@@ -218,6 +225,11 @@ function OrderBoxesList({ orderId }: { orderId: number }) {
                   <span className="text-sm font-black uppercase tracking-tighter text-slate-500">{t("boxes.number")}: <span className="text-slate-900 dark:text-white text-lg">{box.numberInOrder}</span></span>
                 </div>
                 <div className="flex items-center gap-1">
+                  {box.problemType && (
+                    <Badge variant="destructive" className="h-6 px-2 font-black uppercase text-[10px] animate-bounce">
+                      PROBLEM: {box.problemType}
+                    </Badge>
+                  )}
                   <EditBoxDialog box={box} />
                   <Badge variant={box.status === "in_stock" ? "default" : "secondary"} className={cn(
                     "h-6 px-2 font-black uppercase text-[10px] tracking-widest",
@@ -445,7 +457,7 @@ export default function OrdersList() {
                       >
                         <Pencil className="w-5 h-5" />
                       </Button>
-                      {order.status === "active" && (
+                      {order.status === "active" ? (
                         <Button 
                           size="sm" 
                           variant="outline"
@@ -459,6 +471,21 @@ export default function OrdersList() {
                         >
                           <CheckCircle2 className="w-4 h-4" />
                           <span className="hidden sm:inline">{t("orders.complete") || "В выполненные"}</span>
+                        </Button>
+                      ) : (
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          className="h-10 px-3 gap-1.5 border-amber-200 hover:bg-amber-50 hover:text-amber-700 dark:border-amber-900 dark:hover:bg-amber-900/20"
+                          onClick={() => {
+                            if (confirm("Вы уверены, что хотите вернуть этот заказ в статус 'Активен'?")) {
+                              updateOrder.mutate({ id: order.id, data: { status: 'active' } });
+                            }
+                          }}
+                          disabled={updateOrder.isPending}
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                          <span className="hidden sm:inline">Вернуть в работу</span>
                         </Button>
                       )}
                     </TableCell>
