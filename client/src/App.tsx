@@ -13,6 +13,7 @@ import BoxRegistrationWizard from "@/pages/box-registration/wizard";
 import BoxShipping from "@/pages/box-shipping/page";
 import MaterialsList from "@/pages/materials/list";
 import OrdersList from "@/pages/orders/list";
+import SearchOrders from "@/pages/search/page";
 import UsersList from "@/pages/users/list";
 import SettingsPage from "@/pages/settings/page";
 import AuditLog from "@/pages/audit-log";
@@ -89,7 +90,7 @@ function Router() {
       </Route>
 
       <Route path="/search">
-        <ProtectedRoute component={OrdersList} />
+        <ProtectedRoute component={SearchOrders} />
       </Route>
 
       {/* Fallback to 404 */}
