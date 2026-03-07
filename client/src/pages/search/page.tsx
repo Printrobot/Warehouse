@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@shared/routes";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, ChevronDown, ChevronUp, Camera, Box as BoxIcon } from "lucide-react";
+import { Loader2, Search, ChevronDown, ChevronUp, Camera, Box as BoxIcon, Images } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useOrder } from "@/hooks/use-warehouse";
 import React, { useState, Fragment } from "react";
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge as Badge2 } from "@/components/ui/badge";
 import { useLanguage } from "@/hooks/use-language";
 import { cn } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 function BoxImageGallery({ photos, title, icon: Icon }: { photos: string[], title: string, icon: any }) {
   const { t } = useLanguage();
@@ -21,7 +22,7 @@ function BoxImageGallery({ photos, title, icon: Icon }: { photos: string[], titl
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="h-9 px-3 text-xs gap-2 border-primary/20 hover:border-primary hover:bg-primary/5 transition-all">
           <Icon className="w-4 h-4 text-primary" />
-          <span className="font-semibold">{t("boxes.view_photos") || "Photos"}</span>
+          <span className="font-semibold">Фото</span>
           <Badge2 variant="secondary" className="h-5 px-1.5 min-w-[20px] justify-center bg-primary/10 text-primary border-none">{photos.length}</Badge2>
         </Button>
       </DialogTrigger>
@@ -52,7 +53,7 @@ function SearchOrderBoxesList({ orderId }: { orderId: number }) {
   const { data: order, isLoading } = useOrder(orderId);
 
   if (isLoading) return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
-  if (!order?.boxes || order.boxes.length === 0) return <div className="text-center py-12 text-muted-foreground bg-slate-50 rounded-xl m-4 border-2 border-dashed">{t("orders.no_boxes") || "No boxes found"}</div>;
+  if (!order?.boxes || order.boxes.length === 0) return <div className="text-center py-12 text-muted-foreground bg-slate-50 rounded-xl m-4 border-2 border-dashed">Нет коробок</div>;
 
   return (
     <div className="p-6 bg-slate-50/80 dark:bg-slate-900/80 border-y-2 backdrop-blur-sm">
@@ -65,38 +66,38 @@ function SearchOrderBoxesList({ orderId }: { orderId: number }) {
                   <div className="bg-primary/10 p-2 rounded-lg">
                     <BoxIcon className="w-5 h-5 text-primary" />
                   </div>
-                  <span className="text-sm font-black uppercase tracking-tighter text-slate-500">{t("boxes.number")}: <span className="text-slate-900 dark:text-white text-lg">{box.numberInOrder}</span></span>
+                  <span className="text-sm font-black uppercase tracking-tighter text-slate-500">Коробка: <span className="text-slate-900 dark:text-white text-lg">{box.numberInOrder}</span></span>
                 </div>
                 <Badge variant={box.status === "in_stock" ? "default" : "secondary"} className={cn(
                   "h-6 px-2 font-black uppercase text-[10px] tracking-widest",
                   box.status === "in_stock" ? "bg-green-500 hover:bg-green-600" : ""
                 )}>
-                  {box.status}
+                  {box.status === "in_stock" ? "На складе" : "Отгружена"}
                 </Badge>
               </div>
 
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">{t("boxes.quantity")}</div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Количество</div>
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-3xl font-black tabular-nums tracking-tighter">{box.quantity}</span>
-                    <span className="text-sm font-bold text-muted-foreground uppercase">{t("boxes.qty_unit") || "pcs"}</span>
+                    <span className="text-sm font-bold text-muted-foreground uppercase">шт</span>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Location</div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Местоположение</div>
                   <div className="text-sm font-bold px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full border shadow-sm">
-                    {box.locationType === 'permanent' ? 'Rack/Shelf' : 'Temporary'}
+                    {box.locationType === 'permanent' ? 'Стеллаж' : 'Временное'}
                   </div>
                 </div>
               </div>
 
               <div className="flex flex-wrap gap-2 pt-2 border-t border-dashed">
                 {box.stickerPhoto && (
-                  <BoxImageGallery photos={[box.stickerPhoto]} icon={Camera} title={`${t("boxes.sticker") || "Sticker"} - ${box.numberInOrder}`} />
+                  <BoxImageGallery photos={[box.stickerPhoto]} icon={Camera} title={`Этикетка - ${box.numberInOrder}`} />
                 )}
                 {box.productPhotos && box.productPhotos.length > 0 && (
-                  <BoxImageGallery photos={box.productPhotos} icon={Camera} title={`${t("boxes.contents") || "Contents"} - ${box.numberInOrder}`} />
+                  <BoxImageGallery photos={box.productPhotos} icon={Camera} title={`Содержимое - ${box.numberInOrder}`} />
                 )}
               </div>
             </CardContent>
@@ -108,7 +109,6 @@ function SearchOrderBoxesList({ orderId }: { orderId: number }) {
 }
 
 export default function SearchOrders() {
-  const { t } = useLanguage();
   const { data: orders, isLoading } = useQuery({
     queryKey: [api.orders.list.path],
     queryFn: async () => {
@@ -133,6 +133,38 @@ export default function SearchOrders() {
     o.customer?.toLowerCase().includes(search.toLowerCase())
   );
 
+  // Photo search: collect all photos with their metadata
+  const allPhotos = orders?.flatMap(order => 
+    order.boxes?.flatMap((box: any) => {
+      const photos = [];
+      if (box.stickerPhoto) {
+        photos.push({
+          url: box.stickerPhoto,
+          orderNumber: order.number,
+          orderId: order.id,
+          customerName: order.customer || "Неизвестный",
+          boxNumber: box.numberInOrder,
+          type: "Этикетка",
+          color: "bg-gradient-to-br from-blue-500 to-blue-600"
+        });
+      }
+      if (box.productPhotos && box.productPhotos.length > 0) {
+        box.productPhotos.forEach((photo: string, idx: number) => {
+          photos.push({
+            url: photo,
+            orderNumber: order.number,
+            orderId: order.id,
+            customerName: order.customer || "Неизвестный",
+            boxNumber: box.numberInOrder,
+            type: "Содержимое",
+            color: ["bg-gradient-to-br from-amber-500 to-orange-600", "bg-gradient-to-br from-green-500 to-emerald-600", "bg-gradient-to-br from-purple-500 to-pink-600"][idx % 3]
+          });
+        });
+      }
+      return photos;
+    }) || []
+  ) || [];
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -144,71 +176,127 @@ export default function SearchOrders() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight mb-4">{t("orders.search_title") || "Find Order"}</h1>
-        <p className="text-muted-foreground text-sm font-medium">{t("orders.search_description") || "Search by order number or customer name"}</p>
+        <h1 className="text-3xl font-bold tracking-tight mb-2">🔍 Поиск заказа</h1>
+        <p className="text-muted-foreground text-sm font-medium">Быстрый поиск информации о заказе по номеру, клиенту или фото</p>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
-        <Input 
-          placeholder={t("orders.search_placeholder") || "Search order number or customer..."} 
-          className="pl-12 h-14 text-base bg-white dark:bg-slate-900 border-2 focus:border-primary"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
+      <Tabs defaultValue="text" className="w-full">
+        <TabsList className="grid w-full max-w-md h-12 border-2">
+          <TabsTrigger value="text" className="gap-2 font-bold uppercase tracking-tight h-10">
+            <Search className="w-4 h-4" />
+            По номеру
+          </TabsTrigger>
+          <TabsTrigger value="photos" className="gap-2 font-bold uppercase tracking-tight h-10">
+            <Images className="w-4 h-4" />
+            По фото
+          </TabsTrigger>
+        </TabsList>
 
-      {filteredOrders && filteredOrders.length > 0 ? (
-        <Card className="overflow-hidden border-2 shadow-sm">
-          <div className="space-y-0">
-            {filteredOrders.map((order) => (
-              <Fragment key={order.id}>
-                <div
-                  className="flex items-center justify-between p-5 border-b last:border-b-0 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors"
-                  onClick={() => toggleExpand(order.id)}
-                >
-                  <div className="flex items-center gap-4 flex-1">
-                    <button className="p-1 hover:bg-primary/10 rounded-lg transition-colors">
-                      {expandedOrders.has(order.id) ? (
-                        <ChevronUp className="w-5 h-5 text-primary" />
-                      ) : (
-                        <ChevronDown className="w-5 h-5 text-muted-foreground" />
-                      )}
-                    </button>
-                    <div className="min-w-0">
-                      <div className="font-bold text-base tracking-tight">{order.number}</div>
-                      <div className="text-sm text-muted-foreground">{order.customer || "No customer"}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Badge variant={order.status === "active" ? "default" : "secondary"} className="font-bold uppercase text-[11px] tracking-widest">
-                      {order.status === "active" ? "Active" : "Completed"}
-                    </Badge>
-                    <div className="text-xs text-muted-foreground whitespace-nowrap">
-                      {new Date(order.createdAt!).toLocaleDateString()}
-                    </div>
-                  </div>
-                </div>
-
-                {expandedOrders.has(order.id) && (
-                  <div className="border-t">
-                    <SearchOrderBoxesList orderId={order.id} />
-                  </div>
-                )}
-              </Fragment>
-            ))}
+        <TabsContent value="text" className="space-y-4 mt-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
+            <Input 
+              placeholder="Введите номер заказа или имя клиента..." 
+              className="pl-12 h-14 text-base bg-white dark:bg-slate-900 border-2 focus:border-primary"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
-        </Card>
-      ) : (
-        <div className="text-center py-16">
-          <div className="text-muted-foreground mb-2">{t("common.no_results") || "No results found"}</div>
-          {search && (
-            <div className="text-sm text-muted-foreground">
-              Try searching for a different order number or customer name
+
+          {filteredOrders && filteredOrders.length > 0 ? (
+            <Card className="overflow-hidden border-2 shadow-sm">
+              <div className="space-y-0">
+                {filteredOrders.map((order) => (
+                  <Fragment key={order.id}>
+                    <div
+                      className="flex items-center justify-between p-5 border-b last:border-b-0 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors"
+                      onClick={() => toggleExpand(order.id)}
+                    >
+                      <div className="flex items-center gap-4 flex-1">
+                        <button className="p-1 hover:bg-primary/10 rounded-lg transition-colors">
+                          {expandedOrders.has(order.id) ? (
+                            <ChevronUp className="w-5 h-5 text-primary" />
+                          ) : (
+                            <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                          )}
+                        </button>
+                        <div className="min-w-0">
+                          <div className="font-bold text-base tracking-tight">{order.number}</div>
+                          <div className="text-sm text-muted-foreground">{order.customer || "Нет клиента"}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Badge variant={order.status === "active" ? "default" : "secondary"} className="font-bold uppercase text-[11px] tracking-widest">
+                          {order.status === "active" ? "🔄 Активен" : "✓ Завершен"}
+                        </Badge>
+                        <div className="text-xs text-muted-foreground whitespace-nowrap">
+                          {new Date(order.createdAt!).toLocaleDateString('ru-RU')}
+                        </div>
+                      </div>
+                    </div>
+
+                    {expandedOrders.has(order.id) && (
+                      <div className="border-t">
+                        <SearchOrderBoxesList orderId={order.id} />
+                      </div>
+                    )}
+                  </Fragment>
+                ))}
+              </div>
+            </Card>
+          ) : (
+            <div className="text-center py-16">
+              <div className="text-muted-foreground mb-2">Заказы не найдены</div>
+              {search && (
+                <div className="text-sm text-muted-foreground">
+                  Попробуйте другой номер заказа или имя клиента
+                </div>
+              )}
             </div>
           )}
-        </div>
-      )}
+        </TabsContent>
+
+        <TabsContent value="photos" className="space-y-4 mt-6">
+          {allPhotos.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {allPhotos.map((item, idx) => (
+                <Dialog key={idx}>
+                  <DialogTrigger asChild>
+                    <div className="cursor-pointer group">
+                      <div className={cn("aspect-square rounded-xl border-2 overflow-hidden shadow-md hover:shadow-lg transition-all transform hover:scale-105 flex items-center justify-center", item.color)}>
+                        <img src={item.url} alt="Box" className="w-full h-full object-cover" />
+                      </div>
+                      <div className="mt-2 text-xs">
+                        <div className="font-bold text-slate-900 dark:text-white truncate">{item.orderNumber}</div>
+                        <div className="text-muted-foreground text-[10px] truncate">{item.customerName}</div>
+                        <div className="text-muted-foreground text-[10px]">Коробка {item.boxNumber}</div>
+                      </div>
+                    </div>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl bg-white dark:bg-slate-900 border-2">
+                    <DialogHeader className="border-b pb-4">
+                      <DialogTitle className="text-lg">
+                        <div className="space-y-1">
+                          <div className="font-bold">{item.orderNumber}</div>
+                          <div className="text-sm text-muted-foreground">Клиент: {item.customerName}</div>
+                          <div className="text-sm text-muted-foreground">Коробка {item.boxNumber} • {item.type}</div>
+                        </div>
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="rounded-xl overflow-hidden border-2 bg-slate-900">
+                      <img src={item.url} alt="Full view" className="w-full h-auto max-h-[70vh] object-contain" />
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-16">
+              <div className="text-muted-foreground">Нет фото для отображения</div>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
