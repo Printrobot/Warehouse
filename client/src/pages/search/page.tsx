@@ -11,7 +11,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge as Badge2 } from "@/components/ui/badge";
 import { useLanguage } from "@/hooks/use-language";
 import { cn } from "@/lib/utils";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 function BoxImageGallery({ photos, title, icon: Icon }: { photos: string[], title: string, icon: any }) {
   const { t } = useLanguage();
@@ -120,6 +119,7 @@ export default function SearchOrders() {
 
   const [search, setSearch] = useState("");
   const [expandedOrders, setExpandedOrders] = useState<Set<number>>(new Set());
+  const [activeTab, setActiveTab] = useState("text");
 
   const toggleExpand = (id: number) => {
     const next = new Set(expandedOrders);
@@ -165,6 +165,28 @@ export default function SearchOrders() {
     }) || []
   ) || [];
 
+  // Fallback cards when no photos
+  const fallbackCards = orders?.flatMap((order) => 
+    order.boxes?.map((box: any, idx: number) => {
+      const colors = [
+        "bg-gradient-to-br from-red-400 to-pink-600",
+        "bg-gradient-to-br from-yellow-400 to-orange-600",
+        "bg-gradient-to-br from-blue-400 to-cyan-600",
+        "bg-gradient-to-br from-green-400 to-teal-600",
+        "bg-gradient-to-br from-purple-400 to-indigo-600",
+        "bg-gradient-to-br from-rose-400 to-red-600"
+      ];
+      return {
+        orderNumber: order.number,
+        orderId: order.id,
+        customerName: order.customer || "Без клиента",
+        boxNumber: box.numberInOrder,
+        quantity: box.quantity,
+        color: colors[(order.id + idx) % colors.length]
+      };
+    }) || []
+  ) || [];
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -180,19 +202,37 @@ export default function SearchOrders() {
         <p className="text-muted-foreground text-sm font-medium">Быстрый поиск информации о заказе по номеру, клиенту или фото</p>
       </div>
 
-      <Tabs defaultValue="text" className="w-full">
-        <TabsList className="grid w-full max-w-md h-12 border-2">
-          <TabsTrigger value="text" className="gap-2 font-bold uppercase tracking-tight h-10">
-            <Search className="w-4 h-4" />
-            По номеру
-          </TabsTrigger>
-          <TabsTrigger value="photos" className="gap-2 font-bold uppercase tracking-tight h-10">
-            <Images className="w-4 h-4" />
-            По фото
-          </TabsTrigger>
-        </TabsList>
+      {/* Large tab buttons */}
+      <div className="flex gap-3 flex-wrap">
+        <Button
+          onClick={() => setActiveTab("text")}
+          className={cn(
+            "h-14 px-6 gap-3 font-bold uppercase tracking-wider text-base transition-all border-2",
+            activeTab === "text"
+              ? "bg-primary text-white border-primary shadow-lg"
+              : "bg-white dark:bg-slate-900 text-primary border-primary/20 hover:border-primary hover:bg-primary/5"
+          )}
+        >
+          <Search className="w-5 h-5" />
+          По номеру / Клиенту
+        </Button>
+        <Button
+          onClick={() => setActiveTab("photos")}
+          className={cn(
+            "h-14 px-6 gap-3 font-bold uppercase tracking-wider text-base transition-all border-2",
+            activeTab === "photos"
+              ? "bg-primary text-white border-primary shadow-lg"
+              : "bg-white dark:bg-slate-900 text-primary border-primary/20 hover:border-primary hover:bg-primary/5"
+          )}
+        >
+          <Images className="w-5 h-5" />
+          Галерея фото
+        </Button>
+      </div>
 
-        <TabsContent value="text" className="space-y-4 mt-6">
+      {/* Text search tab */}
+      {activeTab === "text" && (
+        <div className="space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
             <Input 
@@ -254,16 +294,19 @@ export default function SearchOrders() {
               )}
             </div>
           )}
-        </TabsContent>
+        </div>
+      )}
 
-        <TabsContent value="photos" className="space-y-4 mt-6">
+      {/* Photo gallery tab */}
+      {activeTab === "photos" && (
+        <div>
           {allPhotos.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {allPhotos.map((item, idx) => (
                 <Dialog key={idx}>
                   <DialogTrigger asChild>
                     <div className="cursor-pointer group">
-                      <div className={cn("aspect-square rounded-xl border-2 overflow-hidden shadow-md hover:shadow-lg transition-all transform hover:scale-105 flex items-center justify-center", item.color)}>
+                      <div className="aspect-square rounded-xl border-2 overflow-hidden shadow-md hover:shadow-lg transition-all transform hover:scale-105 flex items-center justify-center bg-slate-900">
                         <img src={item.url} alt="Box" className="w-full h-full object-cover" />
                       </div>
                       <div className="mt-2 text-xs">
@@ -291,12 +334,54 @@ export default function SearchOrders() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-16">
-              <div className="text-muted-foreground">Нет фото для отображения</div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {fallbackCards.map((card, idx) => (
+                <Dialog key={idx}>
+                  <DialogTrigger asChild>
+                    <div className="cursor-pointer group">
+                      <div className={cn(
+                        "aspect-square rounded-xl border-2 overflow-hidden shadow-md hover:shadow-lg transition-all transform hover:scale-105 flex items-center justify-center p-4",
+                        card.color
+                      )}>
+                        <div className="text-center text-white space-y-2">
+                          <div className="text-2xl font-black">{card.boxNumber}</div>
+                          <div className="text-sm font-bold">x{card.quantity}</div>
+                        </div>
+                      </div>
+                      <div className="mt-2 text-xs">
+                        <div className="font-bold text-slate-900 dark:text-white truncate">{card.orderNumber}</div>
+                        <div className="text-muted-foreground text-[10px] truncate">{card.customerName}</div>
+                        <div className="text-muted-foreground text-[10px]">Коробка {card.boxNumber}</div>
+                      </div>
+                    </div>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl bg-white dark:bg-slate-900 border-2">
+                    <DialogHeader className="border-b pb-4">
+                      <DialogTitle className="text-lg">
+                        <div className="space-y-1">
+                          <div className="font-bold">{card.orderNumber}</div>
+                          <div className="text-sm text-muted-foreground">Клиент: {card.customerName}</div>
+                          <div className="text-sm text-muted-foreground">Коробка {card.boxNumber}</div>
+                          <div className="text-sm text-muted-foreground">Количество: {card.quantity} шт</div>
+                        </div>
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className={cn(
+                      "rounded-xl overflow-hidden border-2 flex items-center justify-center p-8 aspect-square",
+                      card.color
+                    )}>
+                      <div className="text-center text-white space-y-3">
+                        <div className="text-5xl font-black">{card.boxNumber}</div>
+                        <div className="text-2xl font-bold">×{card.quantity} шт</div>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              ))}
             </div>
           )}
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
     </div>
   );
 }
