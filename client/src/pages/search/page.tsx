@@ -133,40 +133,8 @@ export default function SearchOrders() {
     o.customer?.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Photo search: collect all photos with their metadata
-  const allPhotos = orders?.flatMap(order => 
-    order.boxes?.flatMap((box: any) => {
-      const photos = [];
-      if (box.stickerPhoto) {
-        photos.push({
-          url: box.stickerPhoto,
-          orderNumber: order.number,
-          orderId: order.id,
-          customerName: order.customer || "Неизвестный",
-          boxNumber: box.numberInOrder,
-          type: "Этикетка",
-          color: "bg-gradient-to-br from-blue-500 to-blue-600"
-        });
-      }
-      if (box.productPhotos && box.productPhotos.length > 0) {
-        box.productPhotos.forEach((photo: string, idx: number) => {
-          photos.push({
-            url: photo,
-            orderNumber: order.number,
-            orderId: order.id,
-            customerName: order.customer || "Неизвестный",
-            boxNumber: box.numberInOrder,
-            type: "Содержимое",
-            color: ["bg-gradient-to-br from-amber-500 to-orange-600", "bg-gradient-to-br from-green-500 to-emerald-600", "bg-gradient-to-br from-purple-500 to-pink-600"][idx % 3]
-          });
-        });
-      }
-      return photos;
-    }) || []
-  ) || [];
-
-  // Fallback cards when no photos
-  const fallbackCards = orders?.flatMap((order) => 
+  // Gallery items: combine real photos and fallback colored cards
+  const galleryItems = orders?.flatMap((order) => 
     order.boxes?.map((box: any, idx: number) => {
       const colors = [
         "bg-gradient-to-br from-red-400 to-pink-600",
@@ -176,15 +144,58 @@ export default function SearchOrders() {
         "bg-gradient-to-br from-purple-400 to-indigo-600",
         "bg-gradient-to-br from-rose-400 to-red-600"
       ];
-      return {
-        orderNumber: order.number,
-        orderId: order.id,
-        customerName: order.customer || "Без клиента",
-        boxNumber: box.numberInOrder,
-        quantity: box.quantity,
-        color: colors[(order.id + idx) % colors.length]
-      };
-    }) || []
+      
+      const photos = [];
+      
+      // Add sticker photo if exists
+      if (box.stickerPhoto) {
+        photos.push({
+          url: box.stickerPhoto,
+          orderNumber: order.number,
+          orderId: order.id,
+          customerName: order.customer || "Неизвестный",
+          boxNumber: box.numberInOrder,
+          type: "Этикетка",
+          quantity: box.quantity,
+          hasImage: true,
+          color: ""
+        });
+      }
+      
+      // Add product photos if exist
+      if (box.productPhotos && box.productPhotos.length > 0) {
+        box.productPhotos.forEach((photo: string, photoIdx: number) => {
+          photos.push({
+            url: photo,
+            orderNumber: order.number,
+            orderId: order.id,
+            customerName: order.customer || "Неизвестный",
+            boxNumber: box.numberInOrder,
+            type: "Содержимое",
+            quantity: box.quantity,
+            hasImage: true,
+            color: ""
+          });
+        });
+      }
+      
+      // If no photos, add fallback colored card
+      if (photos.length === 0) {
+        photos.push({
+          url: null,
+          orderNumber: order.number,
+          orderId: order.id,
+          customerName: order.customer || "Без клиента",
+          boxNumber: box.numberInOrder,
+          type: "Коробка",
+          quantity: box.quantity,
+          hasImage: false,
+          color: colors[(order.id + idx) % colors.length]
+        });
+      }
+      
+      return photos;
+    })?.flat() || []
   ) || [];
 
   if (isLoading) {
@@ -299,87 +310,62 @@ export default function SearchOrders() {
 
       {/* Photo gallery tab */}
       {activeTab === "photos" && (
-        <div>
-          {allPhotos.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {allPhotos.map((item, idx) => (
-                <Dialog key={idx}>
-                  <DialogTrigger asChild>
-                    <div className="cursor-pointer group">
-                      <div className="aspect-square rounded-xl border-2 overflow-hidden shadow-md hover:shadow-lg transition-all transform hover:scale-105 flex items-center justify-center bg-slate-900">
-                        <img src={item.url} alt="Box" className="w-full h-full object-cover" />
-                      </div>
-                      <div className="mt-2 text-xs">
-                        <div className="font-bold text-slate-900 dark:text-white truncate">{item.orderNumber}</div>
-                        <div className="text-muted-foreground text-[10px] truncate">{item.customerName}</div>
-                        <div className="text-muted-foreground text-[10px]">Коробка {item.boxNumber}</div>
-                      </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {galleryItems.map((item, idx) => (
+            <Dialog key={idx}>
+              <DialogTrigger asChild>
+                <div className="cursor-pointer group">
+                  {item.hasImage ? (
+                    <div className="aspect-square rounded-xl border-2 overflow-hidden shadow-md hover:shadow-lg transition-all transform hover:scale-105 flex items-center justify-center bg-slate-900">
+                      <img src={item.url} alt="Box" className="w-full h-full object-cover" />
                     </div>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl bg-white dark:bg-slate-900 border-2">
-                    <DialogHeader className="border-b pb-4">
-                      <DialogTitle className="text-lg">
-                        <div className="space-y-1">
-                          <div className="font-bold">{item.orderNumber}</div>
-                          <div className="text-sm text-muted-foreground">Клиент: {item.customerName}</div>
-                          <div className="text-sm text-muted-foreground">Коробка {item.boxNumber} • {item.type}</div>
-                        </div>
-                      </DialogTitle>
-                    </DialogHeader>
-                    <div className="rounded-xl overflow-hidden border-2 bg-slate-900">
-                      <img src={item.url} alt="Full view" className="w-full h-auto max-h-[70vh] object-contain" />
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {fallbackCards.map((card, idx) => (
-                <Dialog key={idx}>
-                  <DialogTrigger asChild>
-                    <div className="cursor-pointer group">
-                      <div className={cn(
-                        "aspect-square rounded-xl border-2 overflow-hidden shadow-md hover:shadow-lg transition-all transform hover:scale-105 flex items-center justify-center p-4",
-                        card.color
-                      )}>
-                        <div className="text-center text-white space-y-2">
-                          <div className="text-2xl font-black">{card.boxNumber}</div>
-                          <div className="text-sm font-bold">x{card.quantity}</div>
-                        </div>
-                      </div>
-                      <div className="mt-2 text-xs">
-                        <div className="font-bold text-slate-900 dark:text-white truncate">{card.orderNumber}</div>
-                        <div className="text-muted-foreground text-[10px] truncate">{card.customerName}</div>
-                        <div className="text-muted-foreground text-[10px]">Коробка {card.boxNumber}</div>
-                      </div>
-                    </div>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl bg-white dark:bg-slate-900 border-2">
-                    <DialogHeader className="border-b pb-4">
-                      <DialogTitle className="text-lg">
-                        <div className="space-y-1">
-                          <div className="font-bold">{card.orderNumber}</div>
-                          <div className="text-sm text-muted-foreground">Клиент: {card.customerName}</div>
-                          <div className="text-sm text-muted-foreground">Коробка {card.boxNumber}</div>
-                          <div className="text-sm text-muted-foreground">Количество: {card.quantity} шт</div>
-                        </div>
-                      </DialogTitle>
-                    </DialogHeader>
+                  ) : (
                     <div className={cn(
-                      "rounded-xl overflow-hidden border-2 flex items-center justify-center p-8 aspect-square",
-                      card.color
+                      "aspect-square rounded-xl border-2 overflow-hidden shadow-md hover:shadow-lg transition-all transform hover:scale-105 flex items-center justify-center p-4",
+                      item.color
                     )}>
-                      <div className="text-center text-white space-y-3">
-                        <div className="text-5xl font-black">{card.boxNumber}</div>
-                        <div className="text-2xl font-bold">×{card.quantity} шт</div>
+                      <div className="text-center text-white space-y-2">
+                        <div className="text-2xl font-black">{item.boxNumber}</div>
+                        <div className="text-sm font-bold">×{item.quantity}</div>
                       </div>
                     </div>
-                  </DialogContent>
-                </Dialog>
-              ))}
-            </div>
-          )}
+                  )}
+                  <div className="mt-2 text-xs">
+                    <div className="font-bold text-slate-900 dark:text-white truncate">{item.orderNumber}</div>
+                    <div className="text-muted-foreground text-[10px] truncate">{item.customerName}</div>
+                    <div className="text-muted-foreground text-[10px]">Коробка {item.boxNumber}</div>
+                  </div>
+                </div>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl bg-white dark:bg-slate-900 border-2">
+                <DialogHeader className="border-b pb-4">
+                  <DialogTitle className="text-lg">
+                    <div className="space-y-1">
+                      <div className="font-bold">{item.orderNumber}</div>
+                      <div className="text-sm text-muted-foreground">Клиент: {item.customerName}</div>
+                      <div className="text-sm text-muted-foreground">Коробка {item.boxNumber} • {item.type}</div>
+                      <div className="text-sm text-muted-foreground">Количество: {item.quantity} шт</div>
+                    </div>
+                  </DialogTitle>
+                </DialogHeader>
+                {item.hasImage ? (
+                  <div className="rounded-xl overflow-hidden border-2 bg-slate-900">
+                    <img src={item.url} alt="Full view" className="w-full h-auto max-h-[70vh] object-contain" />
+                  </div>
+                ) : (
+                  <div className={cn(
+                    "rounded-xl overflow-hidden border-2 flex items-center justify-center p-8 aspect-square",
+                    item.color
+                  )}>
+                    <div className="text-center text-white space-y-3">
+                      <div className="text-5xl font-black">{item.boxNumber}</div>
+                      <div className="text-2xl font-bold">×{item.quantity} шт</div>
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+          ))}
         </div>
       )}
     </div>
