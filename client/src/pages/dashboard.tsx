@@ -154,6 +154,16 @@ export default function Dashboard() {
           </motion.div>
         )}
 
+        <motion.div variants={item}>
+          <DashboardCard
+            title={t("orders.title")}
+            icon={Clock}
+            description="Управление активными и завершенными заказами."
+            href="/orders-list"
+            color="bg-indigo-600"
+          />
+        </motion.div>
+
          <motion.div variants={item} className="md:col-span-2 lg:col-span-1">
           <DashboardCard
             title={t("dashboard.history.title")}

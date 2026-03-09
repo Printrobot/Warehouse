@@ -14,6 +14,7 @@ import BoxShipping from "@/pages/box-shipping/page";
 import MaterialsList from "@/pages/materials/list";
 import OrdersList from "@/pages/orders/list";
 import SearchOrders from "@/pages/search/page";
+import ManagementAnalytics from "@/pages/management/analytics";
 import UsersList from "@/pages/users/list";
 import SettingsPage from "@/pages/settings/page";
 import AuditLog from "@/pages/audit-log";
@@ -70,6 +71,10 @@ function Router() {
       </Route>
 
       <Route path="/orders">
+        <ProtectedRoute component={ManagementAnalytics} />
+      </Route>
+
+      <Route path="/orders-list">
         <ProtectedRoute component={OrdersList} />
       </Route>
 
