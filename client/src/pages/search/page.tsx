@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Search, ChevronDown, ChevronUp, Camera, Box as BoxIcon, Images } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useOrder } from "@/hooks/use-warehouse";
-import React, { useState, Fragment } from "react";
+import React, { useState, Fragment, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge as Badge2 } from "@/components/ui/badge";
@@ -48,7 +48,6 @@ function BoxImageGallery({ photos, title, icon: Icon }: { photos: string[], titl
 }
 
 function SearchOrderBoxesList({ orderId }: { orderId: number }) {
-  const { t } = useLanguage();
   const { data: order, isLoading } = useOrder(orderId);
 
   if (isLoading) return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -108,11 +107,20 @@ function SearchOrderBoxesList({ orderId }: { orderId: number }) {
 }
 
 export default function SearchOrders() {
-  const { data: orders, isLoading } = useQuery({
+  const { data: orders, isLoading: ordersLoading } = useQuery<any[]>({
     queryKey: [api.orders.list.path],
     queryFn: async () => {
       const res = await fetch(api.orders.list.path, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch orders");
+      return res.json();
+    }
+  });
+
+  const { data: boxes, isLoading: boxesLoading } = useQuery<any[]>({
+    queryKey: [api.boxes.list.path],
+    queryFn: async () => {
+      const res = await fetch(api.boxes.list.path, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch boxes");
       return res.json();
     }
   });
@@ -133,9 +141,17 @@ export default function SearchOrders() {
     o.customer?.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Gallery items: combine real photos and fallback colored cards
-  const galleryItems = orders?.flatMap((order) => 
-    order.boxes?.map((box: any, idx: number) => {
+  const galleryItems = useMemo(() => {
+    if (!boxes || !orders) return [];
+    
+    const ordersMap = new Map(orders.map(o => [o.id, o]));
+    
+    const items: any[] = [];
+    boxes.forEach((box, idx) => {
+      const order = ordersMap.get(box.orderId);
+      const orderNumber = order?.number || box.manualOrderNumber || "???";
+      const customerName = order?.customer || "???";
+      
       const colors = [
         "bg-gradient-to-br from-red-400 to-pink-600",
         "bg-gradient-to-br from-yellow-400 to-orange-600",
@@ -144,61 +160,54 @@ export default function SearchOrders() {
         "bg-gradient-to-br from-purple-400 to-indigo-600",
         "bg-gradient-to-br from-rose-400 to-red-600"
       ];
-      
-      const photos = [];
-      
-      // Add sticker photo if exists
+
+      let hasAddedAny = false;
+
       if (box.stickerPhoto) {
-        photos.push({
+        items.push({
           url: box.stickerPhoto,
-          orderNumber: order.number,
-          orderId: order.id,
-          customerName: order.customer || "Неизвестный",
+          orderNumber,
+          customerName,
           boxNumber: box.numberInOrder,
           type: "Этикетка",
           quantity: box.quantity,
-          hasImage: true,
-          color: ""
+          hasImage: true
         });
+        hasAddedAny = true;
       }
-      
-      // Add product photos if exist
+
       if (box.productPhotos && box.productPhotos.length > 0) {
-        box.productPhotos.forEach((photo: string, photoIdx: number) => {
-          photos.push({
+        box.productPhotos.forEach((photo: string) => {
+          items.push({
             url: photo,
-            orderNumber: order.number,
-            orderId: order.id,
-            customerName: order.customer || "Неизвестный",
+            orderNumber,
+            customerName,
             boxNumber: box.numberInOrder,
             type: "Содержимое",
             quantity: box.quantity,
-            hasImage: true,
-            color: ""
+            hasImage: true
           });
         });
+        hasAddedAny = true;
       }
-      
-      // If no photos, add fallback colored card
-      if (photos.length === 0) {
-        photos.push({
+
+      if (!hasAddedAny) {
+        items.push({
           url: null,
-          orderNumber: order.number,
-          orderId: order.id,
-          customerName: order.customer || "Без клиента",
+          orderNumber,
+          customerName,
           boxNumber: box.numberInOrder,
           type: "Коробка",
           quantity: box.quantity,
           hasImage: false,
-          color: colors[(order.id + idx) % colors.length]
+          color: colors[(box.id + idx) % colors.length]
         });
       }
-      
-      return photos;
-    })?.flat() || []
-  ) || [];
+    });
+    return items;
+  }, [boxes, orders]);
 
-  if (isLoading) {
+  if (ordersLoading || boxesLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -213,7 +222,6 @@ export default function SearchOrders() {
         <p className="text-muted-foreground text-sm font-medium">Быстрый поиск информации о заказе по номеру, клиенту или фото</p>
       </div>
 
-      {/* Large tab buttons */}
       <div className="flex gap-3 flex-wrap">
         <Button
           onClick={() => setActiveTab("text")}
@@ -241,7 +249,6 @@ export default function SearchOrders() {
         </Button>
       </div>
 
-      {/* Text search tab */}
       {activeTab === "text" && (
         <div className="space-y-4">
           <div className="relative">
@@ -308,7 +315,6 @@ export default function SearchOrders() {
         </div>
       )}
 
-      {/* Photo gallery tab */}
       {activeTab === "photos" && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {galleryItems.map((item, idx) => (
@@ -326,7 +332,7 @@ export default function SearchOrders() {
                     )}>
                       <div className="text-center text-white space-y-2">
                         <div className="text-2xl font-black">{item.boxNumber}</div>
-                        <div className="text-sm font-bold">×{item.quantity}</div>
+                        <div className="text-sm font-bold">×{item.quantity} шт</div>
                       </div>
                     </div>
                   )}
