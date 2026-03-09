@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
-import { Box, Package, Truck, Search, History } from "lucide-react";
+import { Box, Package, Truck, Search, History, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 import { useBoxStats } from "@/hooks/use-warehouse";
 import { useLanguage } from "@/hooks/use-language";
