@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
-import { Box, Package, Truck, Search, History, Clock } from "lucide-react";
+import { Box, Package, Truck, Search, History, Clock, LayoutDashboard } from "lucide-react";
 import { motion } from "framer-motion";
 import { useBoxStats } from "@/hooks/use-warehouse";
 import { useLanguage } from "@/hooks/use-language";
@@ -142,27 +142,27 @@ export default function Dashboard() {
           />
         </motion.div>
 
+        <motion.div variants={item}>
+          <DashboardCard
+            title={t("orders.title")}
+            icon={Package}
+            description={t("dashboard.orders.desc")}
+            href="/orders-list"
+            color="bg-indigo-600"
+          />
+        </motion.div>
+
         {user?.role === 'admin' && (
           <motion.div variants={item}>
             <DashboardCard
-              title={t("dashboard.mgmt.title")}
-              icon={Package}
-              description={t("dashboard.mgmt.desc")}
+              title={t("dashboard.analytics.title")}
+              icon={LayoutDashboard}
+              description={t("dashboard.analytics.desc")}
               href="/orders"
               color="bg-slate-700"
             />
           </motion.div>
         )}
-
-        <motion.div variants={item}>
-          <DashboardCard
-            title={t("orders.title")}
-            icon={Clock}
-            description="Управление активными и завершенными заказами."
-            href="/orders-list"
-            color="bg-indigo-600"
-          />
-        </motion.div>
 
          <motion.div variants={item} className="md:col-span-2 lg:col-span-1">
           <DashboardCard
