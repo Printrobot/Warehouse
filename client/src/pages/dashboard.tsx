@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
-import { Box, Package, Truck, Search, History, Clock, LayoutDashboard } from "lucide-react";
+import { Box, Package, Truck, Search, History, Clock, LayoutDashboard, Users, Settings } from "lucide-react";
 import { motion } from "framer-motion";
 import { useBoxStats } from "@/hooks/use-warehouse";
 import { useLanguage } from "@/hooks/use-language";
@@ -124,16 +124,6 @@ export default function Dashboard() {
 
         <motion.div variants={item}>
           <DashboardCard
-            title={t("dashboard.find.title")}
-            icon={Search}
-            description={t("dashboard.find.desc")}
-            href="/search"
-            color="bg-purple-600"
-          />
-        </motion.div>
-
-        <motion.div variants={item}>
-          <DashboardCard
             title={t("dashboard.ship.title")}
             icon={Truck}
             description={t("dashboard.ship.desc")}
@@ -153,15 +143,47 @@ export default function Dashboard() {
         </motion.div>
 
         {user?.role === 'admin' && (
-          <motion.div variants={item}>
-            <DashboardCard
-              title={t("dashboard.analytics.title")}
-              icon={LayoutDashboard}
-              description={t("dashboard.analytics.desc")}
-              href="/orders"
-              color="bg-slate-700"
-            />
-          </motion.div>
+          <>
+            <motion.div variants={item}>
+              <DashboardCard
+                title={t("dashboard.analytics.title")}
+                icon={LayoutDashboard}
+                description={t("dashboard.analytics.desc")}
+                href="/orders"
+                color="bg-slate-700"
+              />
+            </motion.div>
+
+            <motion.div variants={item}>
+              <DashboardCard
+                title={t("nav.users")}
+                icon={Users}
+                description="Manage user accounts and access permissions."
+                href="/users"
+                color="bg-cyan-600"
+              />
+            </motion.div>
+
+            <motion.div variants={item}>
+              <DashboardCard
+                title={t("nav.reports")}
+                icon={History}
+                description="Analyze shipped boxes and generate shipping reports."
+                href="/reports/shipped"
+                color="bg-rose-600"
+              />
+            </motion.div>
+
+            <motion.div variants={item}>
+              <DashboardCard
+                title={t("nav.settings")}
+                icon={Settings}
+                description="Configure organization settings and preferences."
+                href="/settings"
+                color="bg-amber-600"
+              />
+            </motion.div>
+          </>
         )}
 
          <motion.div variants={item} className="md:col-span-2 lg:col-span-1">
