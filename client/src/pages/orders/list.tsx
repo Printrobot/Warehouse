@@ -386,17 +386,17 @@ export default function OrdersList() {
       const customerName = order?.customer || "???";
       let hasAddedAny = false;
       if (box.stickerPhoto) {
-        items.push({ url: box.stickerPhoto, orderNumber, customerName, boxNumber: box.numberInOrder, type: "Этикетка", quantity: box.quantity, hasImage: true });
+        items.push({ url: box.stickerPhoto, orderNumber, customerName, orderId: box.orderId, boxNumber: box.numberInOrder, type: "Этикетка", quantity: box.quantity, hasImage: true });
         hasAddedAny = true;
       }
       if (box.productPhotos && box.productPhotos.length > 0) {
         box.productPhotos.forEach((photo: string) => {
-          items.push({ url: photo, orderNumber, customerName, boxNumber: box.numberInOrder, type: "Содержимое", quantity: box.quantity, hasImage: true });
+          items.push({ url: photo, orderNumber, customerName, orderId: box.orderId, boxNumber: box.numberInOrder, type: "Содержимое", quantity: box.quantity, hasImage: true });
         });
         hasAddedAny = true;
       }
       if (!hasAddedAny) {
-        items.push({ url: null, orderNumber, customerName, boxNumber: box.numberInOrder, type: "Коробка", quantity: box.quantity, hasImage: false, color: colors[(box.id + idx) % colors.length] });
+        items.push({ url: null, orderNumber, customerName, orderId: box.orderId, boxNumber: box.numberInOrder, type: "Коробка", quantity: box.quantity, hasImage: false, color: colors[(box.id + idx) % colors.length] });
       }
     });
     return items;
@@ -793,6 +793,20 @@ export default function OrdersList() {
                     </div>
                   </div>
                 )}
+                <DialogFooter className="pt-2">
+                  <DialogClose asChild>
+                    <Button
+                      className="h-12 w-full gap-2 font-bold uppercase tracking-wider"
+                      onClick={() => {
+                        setActiveTab("manage");
+                        setExpandedOrders(new Set([item.orderId]));
+                      }}
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      Перейти к управлению заказом
+                    </Button>
+                  </DialogClose>
+                </DialogFooter>
               </DialogContent>
             </Dialog>
           ))}
