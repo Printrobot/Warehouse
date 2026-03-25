@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useCompleteOrder, useCreateOrder, useUpdateOrder, useOrder, useUpdateBox, useShipBox } from "@/hooks/use-warehouse";
 import React, { useState, Fragment, useMemo } from "react";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Form, FormControl,FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
