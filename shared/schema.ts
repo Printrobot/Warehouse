@@ -57,6 +57,8 @@ export const boxes = pgTable("boxes", {
   shippedAt: timestamp("shipped_at"),
   shippedBy: integer("shipped_by").references(() => users.id),
   
+  description: text("description"), // Optional description of box contents
+
   productPhotos: text("product_photos").array(), // Array of URLs/Base64
   stickerPhoto: text("sticker_photo"),
   

@@ -1,24 +1,24 @@
 import { useState, useEffect, useCallback } from "react";
-import { createWorker } from "tesseract.js";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CameraCapture } from "@/components/camera-capture";
 import { QrScanner } from "@/components/qr-scanner";
-import { useCreateBox, useLocationByQr, useOrders, useLocations } from "@/hooks/use-warehouse";
+import { useLocationByQr, useOrders, useLocations } from "@/hooks/use-warehouse";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, ChevronRight, Loader2, Package, QrCode, Mic, MicOff, X } from "lucide-react";
+import { Check, ChevronRight, Loader2, QrCode, Mic, MicOff, X, Package } from "lucide-react";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/hooks/use-language";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface SpeechRecognitionErrorEvent extends Event {
   error: string;
 }
-
 interface SpeechRecognitionEvent extends Event {
   resultIndex: number;
   results: SpeechRecognitionResultList;
@@ -27,7 +27,7 @@ interface SpeechRecognitionEvent extends Event {
 enum Step {
   ORDER_SELECT = 0,
   PRODUCT_PHOTOS = 1,
-  STICKER_DETAILS = 2,
+  BOX_DETAILS = 2,
   LOCATION_SELECT = 3,
   REVIEW = 4
 }
@@ -35,7 +35,7 @@ enum Step {
 const STEP_TITLES = [
   "Определение заказа",
   "Фото товара",
-  "Данные коробки",
+  "Данные коробок",
   "Место хранения",
   "Итог"
 ];
@@ -43,36 +43,34 @@ const STEP_TITLES = [
 export default function BoxRegistrationWizard() {
   const [currentStep, setCurrentStep] = useState<Step>(Step.ORDER_SELECT);
   const [, setLocation] = useLocation();
-  const createBox = useCreateBox();
   const { toast } = useToast();
   const { data: orders } = useOrders({ status: 'active' });
   const { data: locations } = useLocations();
   const { t } = useLanguage();
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [registeredCount, setRegisteredCount] = useState(0);
+
   const [formData, setFormData] = useState({
     orderId: "",
     manualOrderNumber: "",
-    numberInOrder: "",
-    quantity: "",
+    boxCount: "1",
+    description: "",
     productPhotos: [] as string[],
     stickerPhoto: "",
-    locationType: "permanent" as "permanent" | "temporary",
     locationId: undefined as number | undefined,
     locationUuid: "",
-    tempLocationDesc: "",
-    tempLocationPhoto: "",
   });
 
-  const [isOcrLoading, setIsOcrLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState<any>(null);
 
   useEffect(() => {
     const initSpeech = () => {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (SpeechRecognition && !recognition) {
+      const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SR && !recognition) {
         try {
-          const rec = new SpeechRecognition();
+          const rec = new SR();
           rec.continuous = false;
           rec.interimResults = false;
           setRecognition(rec);
@@ -92,26 +90,25 @@ export default function BoxRegistrationWizard() {
 
   useEffect(() => {
     if (recognition) {
-      recognition.lang = t("common.lang_code") || "ru-RU";
+      recognition.lang = "ru-RU";
       recognition.onstart = () => setIsListening(true);
       recognition.onresult = (event: SpeechRecognitionEvent) => {
-        const transcript = event.results[0][0].transcript.toLowerCase();
+        const transcript = event.results[0][0].transcript;
         handleSpeechResult(transcript);
       };
       recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
         setIsListening(false);
         toast({
-          title: "Ошибка",
-          description: `Ошибка микрофона: ${event.error}`,
+          title: "Ошибка микрофона",
+          description: `Код ошибки: ${event.error}`,
           variant: "destructive"
         });
       };
       recognition.onend = () => setIsListening(false);
     }
-  }, [recognition, t]);
+  }, [recognition]);
 
   const handleSpeechResult = useCallback((transcript: string) => {
-    const qtyMatch = transcript.match(/(\d+)/);
     if (currentStep === Step.ORDER_SELECT) {
       const cleanTranscript = transcript.trim().toUpperCase();
       const found = orders?.find(o =>
@@ -126,11 +123,8 @@ export default function BoxRegistrationWizard() {
         updateField("orderId", "");
       }
     }
-    if (qtyMatch) updateField("quantity", qtyMatch[1]);
-    const boxMatch = transcript.match(/(\d+)\s*(?:дробь|на|из|\/|\\)\s*(\d+)/);
-    if (boxMatch) updateField("numberInOrder", `${boxMatch[1]}/${boxMatch[2]}`);
     toast({ title: "Распознано", description: transcript });
-  }, [currentStep, orders, t]);
+  }, [currentStep, orders]);
 
   const toggleListening = () => {
     if (isListening) {
@@ -138,70 +132,14 @@ export default function BoxRegistrationWizard() {
     } else {
       if (!recognition) {
         toast({
-          title: "Не поддерживается",
-          description: "Откройте приложение в отдельной вкладке для использования голосового ввода",
+          title: "Голосовой ввод недоступен",
+          description: "Откройте приложение в отдельной вкладке браузера",
           variant: "destructive"
         });
         return;
       }
       recognition?.start();
       setIsListening(true);
-    }
-  };
-
-  const handleStickerCapture = async (src: string) => {
-    setFormData(prev => ({ ...prev, stickerPhoto: src }));
-    setIsOcrLoading(true);
-    try {
-      const worker = await createWorker('rus+eng', 1, {
-        logger: m => console.log(m),
-        errorHandler: err => console.error("OCR Error:", err)
-      });
-      await worker.setParameters({
-        tessedit_char_whitelist: '0123456789/\\qtyкол-воколичество#: ',
-      });
-      const { data: { text } } = await worker.recognize(src);
-      const cleanText = text.toLowerCase();
-      let foundAny = false;
-
-      const qtyPatterns = [
-        /(?:qty|кол-во|количество|pcs|шт)[:\s#]*(\d+)/i,
-        /(\d+)\s*(?:pcs|шт)/i,
-        /^[^\d]*(\d+)[^\d]*$/m
-      ];
-      for (const pattern of qtyPatterns) {
-        const match = cleanText.match(pattern);
-        if (match) {
-          setFormData(prev => ({ ...prev, quantity: match[1] }));
-          foundAny = true;
-          break;
-        }
-      }
-
-      const boxPatterns = [
-        /(\d+)\s*[\/\\]\s*(\d+)/,
-        /(?:box|коробка|№)[:\s]*(\d+)\s*[\/\\]\s*(\d+)/i
-      ];
-      for (const pattern of boxPatterns) {
-        const match = cleanText.match(pattern);
-        if (match) {
-          setFormData(prev => ({ ...prev, numberInOrder: `${match[1]}/${match[2]}` }));
-          foundAny = true;
-          break;
-        }
-      }
-
-      if (!foundAny) {
-        toast({ title: "Текст не распознан", description: "Попробуйте сфотографировать этикетку чётче", variant: "destructive" });
-      } else {
-        toast({ title: "Данные считаны", description: "Поля заполнены автоматически" });
-      }
-      await worker.terminate();
-    } catch (error) {
-      console.error("OCR Error:", error);
-      toast({ title: "Ошибка OCR", description: "Не удалось обработать изображение", variant: "destructive" });
-    } finally {
-      setIsOcrLoading(false);
     }
   };
 
@@ -227,30 +165,39 @@ export default function BoxRegistrationWizard() {
     }
   };
 
-  const handleSubmit = () => {
-    const payload = {
-      orderId: formData.orderId ? parseInt(formData.orderId) : null,
-      manualOrderNumber: formData.orderId ? null : formData.manualOrderNumber,
-      numberInOrder: formData.numberInOrder,
-      quantity: parseInt(formData.quantity) || 0,
-      locationType: "permanent" as const,
-      locationId: selectedLocation?.id || null,
-      tempLocationDesc: null,
-      tempLocationPhoto: null,
-      status: 'in_stock' as const,
-      productPhotos: formData.productPhotos,
-      stickerPhoto: formData.stickerPhoto || null,
-      problemType: null,
-      problemDesc: null,
-      createdBy: 1,
-      shippedBy: null
-    };
-
-    createBox.mutate(payload, {
-      onSuccess: () => {
-        nextStep();
+  const handleSubmit = async () => {
+    const count = Math.max(1, parseInt(formData.boxCount) || 1);
+    setIsSubmitting(true);
+    try {
+      for (let i = 0; i < count; i++) {
+        const payload = {
+          orderId: formData.orderId ? parseInt(formData.orderId) : null,
+          manualOrderNumber: formData.orderId ? null : (formData.manualOrderNumber || null),
+          numberInOrder: String(i + 1),
+          quantity: 0,
+          description: formData.description || null,
+          locationType: "permanent" as const,
+          locationId: selectedLocation?.id || null,
+          tempLocationDesc: null,
+          tempLocationPhoto: null,
+          status: 'in_stock' as const,
+          productPhotos: formData.productPhotos,
+          stickerPhoto: formData.stickerPhoto || null,
+          problemType: null,
+          problemDesc: null,
+          createdBy: 1,
+          shippedBy: null
+        };
+        await apiRequest('POST', '/api/boxes', payload);
       }
-    });
+      await queryClient.invalidateQueries({ queryKey: ['/api/boxes'] });
+      setRegisteredCount(count);
+      nextStep();
+    } catch (error: any) {
+      toast({ title: "Ошибка сохранения", description: error.message, variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const renderStep = () => {
@@ -275,8 +222,8 @@ export default function BoxRegistrationWizard() {
                       value={formData.orderId}
                       onValueChange={(val) => {
                         updateField("orderId", val);
-                        const foundOrder = orders?.find(o => o.id.toString() === val);
-                        updateField("manualOrderNumber", foundOrder ? foundOrder.number : "");
+                        const found = orders?.find(o => o.id.toString() === val);
+                        updateField("manualOrderNumber", found ? found.number : "");
                       }}
                     >
                       <SelectTrigger className="h-12">
@@ -377,75 +324,63 @@ export default function BoxRegistrationWizard() {
           </div>
         );
 
-      case Step.STICKER_DETAILS:
+      case Step.BOX_DETAILS:
         return (
           <div className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-4">
-                <Label>Фото этикетки (OCR)</Label>
-                <CameraCapture
-                  onCapture={handleStickerCapture}
-                  label="Сфотографировать этикетку"
-                />
-                {isOcrLoading && (
-                  <div className="flex items-center gap-2 mt-2 text-primary animate-pulse text-sm font-medium">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Обработка изображения...
-                  </div>
-                )}
-                {formData.stickerPhoto && (
-                  <div className="aspect-video bg-black rounded-lg overflow-hidden mt-2">
-                    <img src={formData.stickerPhoto} className="w-full h-full object-contain" />
-                  </div>
-                )}
-              </div>
-              <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="flex justify-between items-center">
-                    <span>Номер коробки (напр. 3/10)</span>
-                    {recognition && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={isListening ? "text-red-500 animate-pulse" : "text-muted-foreground"}
-                        onClick={toggleListening}
-                      >
-                        {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                      </Button>
-                    )}
-                  </Label>
-                  <Input
-                    value={formData.numberInOrder}
-                    onChange={(e) => updateField("numberInOrder", e.target.value)}
-                    placeholder="1/1"
-                    className="h-12"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="flex justify-between items-center">
-                    <span>Количество</span>
-                    {recognition && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={isListening ? "text-red-500 animate-pulse" : "text-muted-foreground"}
-                        onClick={toggleListening}
-                      >
-                        {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                      </Button>
-                    )}
-                  </Label>
+                  <Label className="text-base font-semibold">Коробок</Label>
+                  <p className="text-xs text-muted-foreground">Сколько коробок регистрировать за этот раз</p>
                   <Input
                     type="number"
-                    value={formData.quantity}
-                    onChange={(e) => updateField("quantity", e.target.value)}
-                    placeholder="Кол-во штук"
-                    className="h-12"
+                    min="1"
+                    max="999"
+                    value={formData.boxCount}
+                    onChange={(e) => updateField("boxCount", e.target.value)}
+                    placeholder="1"
+                    className="h-14 text-2xl font-bold text-center"
                   />
-                  <p className="text-xs text-muted-foreground">Заполняется автоматически из фото этикетки или голоса.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-base font-semibold">
+                    Описание <span className="text-muted-foreground font-normal text-sm">(необязательно)</span>
+                  </Label>
+                  <p className="text-xs text-muted-foreground">Что находится в коробке</p>
+                  <Textarea
+                    value={formData.description}
+                    onChange={(e) => updateField("description", e.target.value)}
+                    placeholder="напр. листовки формата А4, 500 шт"
+                    className="min-h-[100px] text-base resize-none"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-base font-semibold">
+                    Фото этикетки <span className="text-muted-foreground font-normal text-sm">(необязательно)</span>
+                  </Label>
+                  <CameraCapture
+                    onCapture={(src) => updateField("stickerPhoto", src)}
+                    label="Сфотографировать этикетку"
+                  />
+                  {formData.stickerPhoto && (
+                    <div className="aspect-video bg-black rounded-lg overflow-hidden mt-2">
+                      <img src={formData.stickerPhoto} className="w-full h-full object-contain" />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
+
+            {parseInt(formData.boxCount) > 1 && (
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-blue-800 dark:text-blue-200 text-sm">
+                <Package className="w-4 h-4 inline mr-2" />
+                Будет зарегистрировано <strong>{formData.boxCount} коробки</strong> с одинаковыми фото и описанием
+              </div>
+            )}
           </div>
         );
 
@@ -504,9 +439,17 @@ export default function BoxRegistrationWizard() {
           <div className="space-y-6">
             <Card className="p-6 space-y-4">
               <div className="flex items-center gap-2 text-green-600 mb-2">
-                <Check className="w-5 h-5" />
-                <span className="font-bold text-lg uppercase tracking-tight">Успешно сохранено</span>
+                <Check className="w-6 h-6" />
+                <span className="font-bold text-xl uppercase tracking-tight">Успешно сохранено</span>
               </div>
+
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg text-center">
+                <p className="text-3xl font-bold text-green-700 dark:text-green-300">{registeredCount}</p>
+                <p className="text-sm text-green-600 dark:text-green-400">
+                  {registeredCount === 1 ? "коробка зарегистрирована" : registeredCount < 5 ? "коробки зарегистрированы" : "коробок зарегистрировано"}
+                </p>
+              </div>
+
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-muted-foreground">Заказ:</span>
@@ -517,17 +460,15 @@ export default function BoxRegistrationWizard() {
                   </p>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Коробка:</span>
-                  <p className="font-semibold">{formData.numberInOrder}</p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Количество:</span>
-                  <p className="font-semibold">{formData.quantity}</p>
-                </div>
-                <div>
                   <span className="text-muted-foreground">Местоположение:</span>
                   <p className="font-semibold">{selectedLocation?.name || "—"}</p>
                 </div>
+                {formData.description && (
+                  <div className="col-span-2">
+                    <span className="text-muted-foreground">Описание:</span>
+                    <p className="font-semibold">{formData.description}</p>
+                  </div>
+                )}
               </div>
 
               {(formData.productPhotos.length > 0 || formData.stickerPhoto) && (
@@ -550,8 +491,8 @@ export default function BoxRegistrationWizard() {
   const canAdvance = () => {
     switch (currentStep) {
       case Step.ORDER_SELECT: return !!formData.orderId || !!formData.manualOrderNumber;
-      case Step.PRODUCT_PHOTOS: return true; // фото необязательны
-      case Step.STICKER_DETAILS: return !!formData.numberInOrder && !!formData.quantity;
+      case Step.PRODUCT_PHOTOS: return true;
+      case Step.BOX_DETAILS: return parseInt(formData.boxCount) >= 1;
       case Step.LOCATION_SELECT: return !!selectedLocation;
       default: return true;
     }
@@ -599,24 +540,21 @@ export default function BoxRegistrationWizard() {
           onClick={prevStep}
           disabled={currentStep === 0 || currentStep === Step.REVIEW}
         >
-          {t("common.back")}
+          Назад
         </Button>
 
         {currentStep === Step.LOCATION_SELECT ? (
           <Button
             size="lg"
             onClick={handleSubmit}
-            className="bg-green-600 hover:bg-green-700 w-40"
-            disabled={!canAdvance() || createBox.isPending}
+            className="bg-green-600 hover:bg-green-700 w-48"
+            disabled={!canAdvance() || isSubmitting}
           >
-            {createBox.isPending ? <Loader2 className="animate-spin" /> : "Сохранить"}
+            {isSubmitting ? <Loader2 className="animate-spin mr-2" /> : null}
+            {isSubmitting ? "Сохранение..." : "Сохранить"}
           </Button>
         ) : currentStep === Step.REVIEW ? (
-          <Button
-            size="lg"
-            onClick={() => setLocation("/")}
-            className="w-40"
-          >
+          <Button size="lg" onClick={() => setLocation("/")} className="w-40">
             Готово
           </Button>
         ) : (

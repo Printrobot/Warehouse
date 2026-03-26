@@ -41,9 +41,9 @@ function BoxImageGallery({ photos, title, icon: Icon }: { photos: string[], titl
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 max-h-[75vh] overflow-y-auto p-2">
           {photos.map((src, idx) => (
             <div key={idx} className="relative aspect-video bg-slate-900 rounded-xl overflow-hidden border-2 shadow-inner group">
-              <img src={src} alt={`Photo ${idx + 1}`} className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105" />
+              <img src={src} alt={`Фото ${idx + 1}`} className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105" />
               <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider">
-                Photo {idx + 1}
+                Фото {idx + 1}
               </div>
             </div>
           ))}
@@ -76,7 +76,7 @@ function EditBoxDialog({ box }: { box: any }) {
     }, {
       onSuccess: () => {
         setIsOpen(false);
-        toast({ title: "Success", description: "Box updated" });
+        toast({ title: "Сохранено", description: "Коробка обновлена" });
       }
     });
   };
@@ -151,7 +151,7 @@ function OrderBoxesList({ orderId }: { orderId: number }) {
   
   const handleBulkShip = () => {
     if (selectedBoxes.size === 0) return;
-    if (confirm(`Ship ${selectedBoxes.size} selected boxes?`)) {
+    if (confirm(`Отгрузить ${selectedBoxes.size} выбранных коробок?`)) {
       Array.from(selectedBoxes).forEach(id => {
         shipSelectedBoxes.mutate(id);
       });
@@ -176,7 +176,7 @@ function OrderBoxesList({ orderId }: { orderId: number }) {
       <div className="flex justify-between items-center mb-4 px-2">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="h-8 px-3 font-bold border-2">
-            Selected: {selectedBoxes.size}
+            Выбрано: {selectedBoxes.size}
           </Badge>
           {selectedBoxes.size > 0 && (
             <Button 
@@ -186,7 +186,7 @@ function OrderBoxesList({ orderId }: { orderId: number }) {
               onClick={handleBulkShip}
             >
               <CheckCircle2 className="w-4 h-4" />
-              Ship Selected
+              Отгрузить выбранные
             </Button>
           )}
         </div>
@@ -199,7 +199,7 @@ function OrderBoxesList({ orderId }: { orderId: number }) {
             else setSelectedBoxes(new Set(inStockBoxes.map(b => b.id)));
           }}
         >
-          {selectedBoxes.size === inStockBoxes.length ? "Deselect All" : "Select All In Stock"}
+          {selectedBoxes.size === inStockBoxes.length ? "Снять выбор" : "Выбрать все на складе"}
         </Button>
       </div>
 

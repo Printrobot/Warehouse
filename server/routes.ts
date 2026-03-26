@@ -349,9 +349,9 @@ async function seedDatabase() {
   const existingLocs = await storage.getLocations();
   let locs = existingLocs;
   if (existingLocs.length === 0) {
-    const l1 = await storage.createLocation({ name: 'Rack A, Shelf 1', qrUuid: 'loc-a1', isActive: true });
-    const l2 = await storage.createLocation({ name: 'Rack A, Shelf 2', qrUuid: 'loc-a2', isActive: true });
-    const l3 = await storage.createLocation({ name: 'Loading Dock', qrUuid: 'loc-dock', isActive: true });
+    const l1 = await storage.createLocation({ name: 'Стеллаж А, Полка 1', qrUuid: 'loc-a1', isActive: true });
+    const l2 = await storage.createLocation({ name: 'Стеллаж А, Полка 2', qrUuid: 'loc-a2', isActive: true });
+    const l3 = await storage.createLocation({ name: 'Зона загрузки', qrUuid: 'loc-dock', isActive: true });
     locs = [l1, l2, l3];
     console.log('Seeded locations');
   }

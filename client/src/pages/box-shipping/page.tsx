@@ -65,8 +65,8 @@ export default function BoxShipping() {
                 // Only show relevant errors, ignore constant scanning noise
                 if (errorStr.includes("No MultiFormat Readers")) return;
                 toast({
-                  title: "Scanner Error",
-                  description: "Could not start camera or decode QR. Please try manual entry.",
+                  title: "Ошибка сканера",
+                  description: "Не удалось включить камеру. Попробуйте ручной ввод.",
                   variant: "destructive"
                 });
               }}
@@ -96,12 +96,12 @@ export default function BoxShipping() {
                 <SelectContent className="bg-white dark:bg-slate-900 border shadow-md max-h-[300px]">
                   {boxes?.filter(b => b.status === 'in_stock').map((b) => (
                     <SelectItem key={b.id} value={b.id.toString()}>
-                      {b.manualOrderNumber || "No Order"} - Box {b.numberInOrder} ({b.quantity} шт)
+                      {b.manualOrderNumber || "Без заказа"} — Коробка {b.numberInOrder}
                     </SelectItem>
                   ))}
                   {(!boxes || boxes.filter(b => b.status === 'in_stock').length === 0) && (
                     <div className="p-2 text-center text-muted-foreground text-sm">
-                      No boxes in stock
+                      Нет коробок на складе
                     </div>
                   )}
                 </SelectContent>
@@ -120,7 +120,7 @@ export default function BoxShipping() {
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-muted-foreground">{t("ship.order")}:</span>
-                <p className="font-semibold">{currentBox.manualOrderNumber || "N/A"}</p>
+                <p className="font-semibold">{currentBox.manualOrderNumber || "—"}</p>
               </div>
               <div>
                 <span className="text-muted-foreground">{t("ship.box_num")}:</span>
@@ -134,7 +134,7 @@ export default function BoxShipping() {
                 <span className="text-muted-foreground">{t("ship.status")}:</span>
                 <div>
                   <Badge variant={currentBox.status === 'in_stock' ? 'default' : 'secondary'}>
-                    {currentBox.status}
+                    {currentBox.status === 'in_stock' ? 'На складе' : 'Отгружена'}
                   </Badge>
                 </div>
               </div>
