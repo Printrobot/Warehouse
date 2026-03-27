@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
-import { Box, Package, Truck, Search, History, Clock, LayoutDashboard, Users, Settings } from "lucide-react";
+import { Box, Package, Truck, Search, History, Clock, LayoutDashboard, Users, Settings, ArrowRightLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { useBoxStats } from "@/hooks/use-warehouse";
 import { useLanguage } from "@/hooks/use-language";
@@ -129,6 +129,16 @@ export default function Dashboard() {
             description={t("dashboard.ship.desc")}
             href="/ship-box"
             color="bg-red-600"
+          />
+        </motion.div>
+
+        <motion.div variants={item}>
+          <DashboardCard
+            title={t("dashboard.move.title")}
+            icon={ArrowRightLeft}
+            description={t("dashboard.move.desc")}
+            href="/move-boxes"
+            color="bg-violet-600"
           />
         </motion.div>
 

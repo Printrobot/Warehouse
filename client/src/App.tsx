@@ -19,6 +19,7 @@ import UsersList from "@/pages/users/list";
 import SettingsPage from "@/pages/settings/page";
 import AuditLog from "@/pages/audit-log";
 import ShippedReport from "@/pages/reports/shipped";
+import MoveBoxes from "@/pages/move-boxes/page";
 import { LayoutShell } from "@/components/layout-shell";
 
 // Protected Route Wrapper
@@ -96,6 +97,10 @@ function Router() {
 
       <Route path="/search">
         <ProtectedRoute component={SearchOrders} />
+      </Route>
+
+      <Route path="/move-boxes">
+        <ProtectedRoute component={MoveBoxes} />
       </Route>
 
       {/* Fallback to 404 */}

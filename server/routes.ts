@@ -138,6 +138,69 @@ export async function registerRoutes(
     }
   });
 
+  // === MOVE BOXES ===
+  app.post('/api/boxes/move', async (req, res) => {
+    try {
+      const { boxIds, locationId, newOrderNumber, splitFromOrderId } = req.body;
+
+      if (!Array.isArray(boxIds) || boxIds.length === 0 || !locationId) {
+        return res.status(400).json({ message: "boxIds and locationId are required" });
+      }
+
+      let targetOrderId: number | null = null;
+
+      // If splitting, create a new order first
+      if (newOrderNumber && splitFromOrderId) {
+        const sourceOrder = await storage.getOrder(Number(splitFromOrderId));
+        const newOrder = await storage.createOrder({
+          number: newOrderNumber,
+          customer: sourceOrder?.customer || null,
+          status: 'active',
+        });
+        targetOrderId = newOrder.id;
+      }
+
+      // Update each box
+      const movedBoxes = [];
+      for (const rawId of boxIds) {
+        const boxId = Number(rawId);
+        const box = await storage.getBox(boxId);
+        if (!box || box.status !== 'in_stock') continue;
+
+        const updates: any = { locationId: Number(locationId) };
+        if (targetOrderId) {
+          updates.orderId = targetOrderId;
+          updates.manualOrderNumber = newOrderNumber;
+        }
+
+        const updated = await storage.updateBox(boxId, updates);
+        movedBoxes.push(updated);
+      }
+
+      // Audit log
+      // @ts-ignore
+      const userId = req.session?.userId;
+      if (userId) {
+        const user = await storage.getUser(userId);
+        if (user) {
+          await storage.createAuditLog({
+            userId: user.id,
+            userName: user.name,
+            actionType: 'move',
+            entityType: 'boxes',
+            entityId: boxIds.join(','),
+            details: { boxIds, locationId, newOrderNumber, splitFromOrderId, movedCount: movedBoxes.length },
+          });
+        }
+      }
+
+      res.json({ moved: movedBoxes.length, boxes: movedBoxes });
+    } catch (e: any) {
+      console.error("Move boxes error:", e);
+      res.status(500).json({ message: e.message || "Internal error" });
+    }
+  });
+
   app.get(api.boxes.stats.path, async (req, res) => {
       const stats = await storage.getBoxStats();
       res.json(stats);

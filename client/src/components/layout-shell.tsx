@@ -9,7 +9,8 @@ import {
   Settings, 
   Truck, 
   Users,
-  History 
+  History,
+  ArrowRightLeft
 } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -35,6 +36,7 @@ export function LayoutShell({ children }: LayoutShellProps) {
     { name: t("nav.ship_box"), href: "/ship-box", icon: Truck },
     { name: t("nav.materials"), href: "/materials", icon: Box },
     { name: t("nav.orders"), href: "/orders-list", icon: Package },
+    { name: t("nav.move_boxes"), href: "/move-boxes", icon: ArrowRightLeft },
     ...(isAdmin ? [
       { name: t("nav.analytics"), href: "/orders", icon: LayoutDashboard },
       { name: t("nav.users"), href: "/users", icon: Users },
@@ -96,7 +98,7 @@ export function LayoutShell({ children }: LayoutShellProps) {
           onClick={() => logout()}
         >
           <LogOut className="w-4 h-4" />
-          Sign Out
+          {t("nav.logout")}
         </Button>
       </div>
     </div>
