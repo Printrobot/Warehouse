@@ -677,6 +677,12 @@ export default function MoveBoxes() {
               .map((id) => locations?.find((l) => l.id === id)?.name || `#${id}`)
               .join(", ");
 
+            const firstPhoto =
+                order.inStockBoxes.find((b) => b.productPhotos?.length)?.productPhotos?.[0] ||
+                order.inStockBoxes.find((b) => b.stickerPhoto)?.stickerPhoto ||
+                null;
+              const firstDesc = order.inStockBoxes.find((b) => b.description)?.description || null;
+
             return (
               <Card
                 key={order.id}
@@ -685,7 +691,22 @@ export default function MoveBoxes() {
                 data-testid={`order-card-${order.id}`}
               >
                 <CardContent className="pt-4 pb-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-start gap-4">
+                    {/* Photo thumbnail */}
+                    {firstPhoto ? (
+                      <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden border bg-black">
+                        <img
+                          src={firstPhoto}
+                          className="w-full h-full object-cover"
+                          alt=""
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-16 h-16 flex-shrink-0 rounded-lg border-2 border-dashed bg-muted/30 flex items-center justify-center">
+                        <Package className="w-6 h-6 text-muted-foreground/40" />
+                      </div>
+                    )}
+
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-lg">
@@ -697,6 +718,11 @@ export default function MoveBoxes() {
                           </span>
                         )}
                       </div>
+                      {firstDesc && (
+                        <p className="text-sm text-foreground/80 mt-0.5 line-clamp-1">
+                          {firstDesc}
+                        </p>
+                      )}
                       <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground flex-wrap">
                         <span className="flex items-center gap-1">
                           <Package className="w-3.5 h-3.5" />
@@ -717,7 +743,7 @@ export default function MoveBoxes() {
                         </p>
                       )}
                     </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                    <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-1" />
                   </div>
                 </CardContent>
               </Card>
