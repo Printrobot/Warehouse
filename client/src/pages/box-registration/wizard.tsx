@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Check, ChevronRight, Loader2, QrCode, Mic, MicOff, X, Package,
-  ArrowRight, MapPin, PlusCircle, Layers, Search, Building2
+  MapPin, PlusCircle, Layers, Search, Building2, ArrowRight,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
@@ -32,13 +32,16 @@ interface SpeechRecognitionEvent extends Event {
 }
 
 enum Step {
-  ORDER_SELECT  = 0,
-  PHOTOS        = 1,
-  BOX_DETAILS   = 2,
+  ORDER_SELECT   = 0,
+  PHOTOS         = 1,
+  BOX_DETAILS    = 2,
   LOCATION_SELECT = 3,
-  REVIEW        = 4,
+  REVIEW         = 4,
 }
 
+// Labels shown in progress bar (short)
+const STEP_LABELS = ["Заказ", "Фото", "Данные", "Место", "Итог"];
+// Full titles shown as heading
 const STEP_TITLES = [
   "Определение заказа",
   "Фото",
@@ -64,10 +67,13 @@ export default function BoxRegistrationWizard() {
   // ── Wizard mode ──────────────────────────────────────────────────────────
   const [mode, setMode] = useState<WizardMode>("new");
 
-  // ── Step 1 sub-UI: "new" tab vs "existing" tab
-  const [orderTab, setOrderTab] = useState<"new" | "existing">("new");
-  const [existingOrderSearch, setExistingOrderSearch] = useState("");
+  // ── Step 1 state ──────────────────────────────────────────────────────────
+  // Single search field (used for both filtering and manual entry)
+  const [orderSearch, setOrderSearch] = useState("");
+  // ID of the selected/matched existing order
   const [existingOrderId, setExistingOrderId] = useState<string>("");
+  // Whether to show inline dropdown suggestions
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const existingOrder: Order | undefined = useMemo(
     () => orders?.find((o) => o.id.toString() === existingOrderId),
@@ -86,17 +92,30 @@ export default function BoxRegistrationWizard() {
 
   const firstBoxDesc = existingBoxes[0]?.description ?? "";
   const firstBoxLocId = existingBoxes[0]?.locationId ?? null;
+  const firstBoxPhoto = existingBoxes[0]?.productPhotos?.[0] ?? null;
+  const firstBoxSticker = existingBoxes[0]?.stickerPhoto ?? null;
 
-  const filteredOrders = useMemo(() => {
-    if (!orders) return [];
-    const q = existingOrderSearch.toLowerCase();
-    if (!q) return orders;
+  // Filtered suggestions while typing (not yet selected)
+  const suggestions = useMemo(() => {
+    if (!orders || !orderSearch || existingOrderId) return [];
+    const q = orderSearch.toLowerCase();
     return orders.filter(
       (o) =>
         o.number.toLowerCase().includes(q) ||
         (o.customer ?? "").toLowerCase().includes(q)
     );
-  }, [orders, existingOrderSearch]);
+  }, [orders, orderSearch, existingOrderId]);
+
+  // Auto-match: if typed text exactly equals an order number
+  useEffect(() => {
+    if (!orders || existingOrderId) return;
+    const exact = orders.find(
+      (o) => o.number.toLowerCase() === orderSearch.toLowerCase()
+    );
+    if (exact) {
+      setExistingOrderId(exact.id.toString());
+    }
+  }, [orderSearch, orders, existingOrderId]);
 
   // ── Form data ─────────────────────────────────────────────────────────────
   const [formData, setFormData] = useState({
@@ -157,24 +176,10 @@ export default function BoxRegistrationWizard() {
 
   const handleSpeechResult = useCallback(
     (transcript: string) => {
-      if (currentStep === Step.ORDER_SELECT) {
-        const clean = transcript.trim().toUpperCase();
-        const found = orders?.find(
-          (o) =>
-            o.number.toUpperCase() === clean ||
-            o.number.toUpperCase().includes(clean)
-        );
-        if (found) {
-          updateField("orderId", found.id.toString());
-          updateField("manualOrderNumber", found.number);
-        } else {
-          updateField("manualOrderNumber", transcript.toUpperCase());
-          updateField("orderId", "");
-        }
-      }
+      setOrderSearch(transcript.toUpperCase());
       toast({ title: "Распознано", description: transcript });
     },
-    [currentStep, orders]
+    []
   );
 
   const toggleListening = () => {
@@ -210,13 +215,15 @@ export default function BoxRegistrationWizard() {
   const prevStep = () =>
     setCurrentStep((prev) => Math.max(prev - 1, Step.ORDER_SELECT) as Step);
 
-  // ── QR scan for new-order mode ────────────────────────────────────────────
+  // ── QR scan for order ─────────────────────────────────────────────────────
   const handleScanOrder = (data: string) => {
     const found = orders?.find((o) => o.number === data);
     if (found) {
-      updateField("orderId", found.id.toString());
-      updateField("manualOrderNumber", found.number);
+      setExistingOrderId(found.id.toString());
+      setOrderSearch(found.number);
     } else {
+      setOrderSearch(data);
+      setExistingOrderId("");
       toast({ title: "Заказ не найден", description: "QR не соответствует ни одному заказу", variant: "destructive" });
     }
   };
@@ -228,7 +235,6 @@ export default function BoxRegistrationWizard() {
     updateField("orderId", existingOrder.id.toString());
     updateField("manualOrderNumber", "");
     updateField("description", firstBoxDesc);
-    // Pre-fill location from existing boxes
     if (firstBoxLocId) {
       updateField("locationId", firstBoxLocId);
       updateField("locationUuid", "");
@@ -238,11 +244,8 @@ export default function BoxRegistrationWizard() {
 
   const handleAddNewType = () => {
     if (!existingOrder) return;
-    // compute next /N suffix
     const base = existingOrder.number;
-    const siblings = (orders || []).filter((o) =>
-      o.number.startsWith(`${base}/`)
-    );
+    const siblings = (orders || []).filter((o) => o.number.startsWith(`${base}/`));
     const newNumber = `${base}/${siblings.length + 1}`;
     setMode("add_new_type");
     updateField("orderId", "");
@@ -250,6 +253,13 @@ export default function BoxRegistrationWizard() {
     updateField("description", "");
     updateField("locationId", undefined);
     updateField("locationUuid", "");
+    nextStep();
+  };
+
+  const handleCreateNew = () => {
+    setMode("new");
+    updateField("orderId", "");
+    updateField("manualOrderNumber", orderSearch.trim());
     nextStep();
   };
 
@@ -294,16 +304,11 @@ export default function BoxRegistrationWizard() {
   // ── canAdvance ────────────────────────────────────────────────────────────
   const canAdvance = () => {
     switch (currentStep) {
-      case Step.ORDER_SELECT:
-        return !!formData.orderId || !!formData.manualOrderNumber;
-      case Step.PHOTOS:
-        return true;
-      case Step.BOX_DETAILS:
-        return parseInt(formData.boxCount) >= 1;
-      case Step.LOCATION_SELECT:
-        return !!selectedLocation;
-      default:
-        return true;
+      case Step.ORDER_SELECT:   return false; // handled by inline buttons
+      case Step.PHOTOS:         return true;
+      case Step.BOX_DETAILS:    return parseInt(formData.boxCount) >= 1;
+      case Step.LOCATION_SELECT:return !!selectedLocation;
+      default:                  return true;
     }
   };
 
@@ -312,61 +317,93 @@ export default function BoxRegistrationWizard() {
   // ════════════════════════════════════════════════════════════════════════════
 
   // ── Step 1: ORDER_SELECT ──────────────────────────────────────────────────
-  const renderOrderSelect = () => (
-    <div className="space-y-6">
-      {/* Tab switcher */}
-      <div className="flex rounded-xl border overflow-hidden">
-        <button
-          className={cn(
-            "flex-1 py-3 text-sm font-semibold transition-colors",
-            orderTab === "new"
-              ? "bg-primary text-primary-foreground"
-              : "bg-background text-muted-foreground hover:bg-muted/50"
-          )}
-          onClick={() => setOrderTab("new")}
-          data-testid="tab-new-order"
-        >
-          Новый заказ
-        </button>
-        <button
-          className={cn(
-            "flex-1 py-3 text-sm font-semibold transition-colors",
-            orderTab === "existing"
-              ? "bg-primary text-primary-foreground"
-              : "bg-background text-muted-foreground hover:bg-muted/50"
-          )}
-          onClick={() => setOrderTab("existing")}
-          data-testid="tab-existing-order"
-        >
-          Добавить в существующий
-        </button>
-      </div>
+  const renderOrderSelect = () => {
+    const orderFound = !!existingOrder;
+    const hasInput = orderSearch.trim().length > 0;
 
-      {/* ── NEW ORDER ── */}
-      {orderTab === "new" && (
-        <div className="grid md:grid-cols-2 gap-6">
-          <Card className="p-6 space-y-4">
-            <h3 className="font-semibold text-lg flex items-center gap-2">
-              <QrCode className="w-5 h-5" /> Сканировать QR заказа
-            </h3>
-            <QrScanner onScan={handleScanOrder} label="Навести камеру на QR-код" />
-          </Card>
+    return (
+      <div className="space-y-5">
+        {/* Search row: input + voice + QR */}
+        <div className="grid md:grid-cols-2 gap-4">
+          {/* Left: text search */}
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold">Номер заказа</Label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Введите или выберите из списка..."
+                  className="pl-9 h-12 text-base"
+                  value={orderSearch}
+                  onChange={(e) => {
+                    setOrderSearch(e.target.value);
+                    setExistingOrderId("");
+                    setShowSuggestions(true);
+                  }}
+                  onFocus={() => setShowSuggestions(true)}
+                  data-testid="input-order-search"
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className={cn(
+                  "h-12 w-12 flex-shrink-0 transition-all",
+                  isListening
+                    ? "border-red-500 text-red-500 animate-pulse bg-red-50"
+                    : "text-muted-foreground hover:text-primary"
+                )}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleListening(); }}
+                data-testid="btn-voice"
+              >
+                {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+              </Button>
+            </div>
 
-          <Card className="p-6 space-y-4">
-            <h3 className="font-semibold text-lg">Ввод вручную</h3>
+            {/* Suggestions dropdown */}
+            {showSuggestions && !existingOrderId && suggestions.length > 0 && (
+              <div className="border rounded-xl shadow-lg overflow-hidden bg-background z-10 relative">
+                {suggestions.slice(0, 6).map((order) => {
+                  const cnt = allBoxes?.filter(
+                    (b) => b.orderId === order.id && b.status === "in_stock"
+                  ).length ?? 0;
+                  return (
+                    <button
+                      key={order.id}
+                      className="w-full flex items-center justify-between px-4 py-3 text-sm hover:bg-muted/50 border-b last:border-b-0 transition-colors text-left"
+                      onMouseDown={() => {
+                        setExistingOrderId(order.id.toString());
+                        setOrderSearch(order.number);
+                        setShowSuggestions(false);
+                      }}
+                      data-testid={`suggestion-${order.id}`}
+                    >
+                      <div>
+                        <span className="font-semibold">№{order.number}</span>
+                        {order.customer && (
+                          <span className="ml-2 text-muted-foreground">{order.customer}</span>
+                        )}
+                      </div>
+                      <Badge variant="outline" className="text-xs">{cnt} коробок</Badge>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
-            <div className="space-y-2">
-              <Label>Выбрать заказ из списка</Label>
+            {/* Or pick from full dropdown */}
+            {!existingOrderId && (
               <Select
-                value={formData.orderId}
+                value={existingOrderId}
                 onValueChange={(val) => {
-                  updateField("orderId", val);
+                  setExistingOrderId(val);
                   const found = orders?.find((o) => o.id.toString() === val);
-                  updateField("manualOrderNumber", found ? found.number : "");
+                  setOrderSearch(found?.number ?? "");
+                  setShowSuggestions(false);
                 }}
               >
-                <SelectTrigger className="h-12">
-                  <SelectValue placeholder="Выберите заказ..." />
+                <SelectTrigger className="h-11 text-sm">
+                  <SelectValue placeholder="Или выбрать из списка..." />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-slate-900 border shadow-md">
                   {orders?.map((o) => (
@@ -376,182 +413,130 @@ export default function BoxRegistrationWizard() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">или</span>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="flex justify-between items-center h-10">
-                <span className="text-sm font-semibold">Номер вручную</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  type="button"
-                  className={cn(
-                    "h-8 px-2 gap-1 transition-all",
-                    isListening
-                      ? "border-red-500 text-red-500 animate-pulse bg-red-50"
-                      : "text-muted-foreground hover:text-primary"
-                  )}
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleListening(); }}
-                >
-                  {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                  <span className="text-[10px] uppercase font-bold">
-                    {isListening ? "Стоп" : "Голос"}
-                  </span>
-                </Button>
-              </Label>
-              <Input
-                placeholder="напр. ORD-1234"
-                className="h-12 text-lg font-medium"
-                value={formData.manualOrderNumber}
-                onChange={(e) => {
-                  updateField("manualOrderNumber", e.target.value);
-                  updateField("orderId", "");
-                }}
-                data-testid="input-manual-order"
-              />
-            </div>
-
-            {(formData.orderId || formData.manualOrderNumber) && (
-              <div className="p-4 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-lg flex items-center gap-2">
-                <Check className="w-4 h-4" /> Заказ определён
-              </div>
             )}
-          </Card>
+          </div>
+
+          {/* Right: QR scan */}
+          <div>
+            <Label className="text-sm font-semibold block mb-2">Сканировать QR заказа</Label>
+            <QrScanner onScan={handleScanOrder} label="Навести камеру на QR-код заказа" />
+          </div>
         </div>
-      )}
 
-      {/* ── EXISTING ORDER ── */}
-      {orderTab === "existing" && (
-        <div className="space-y-4">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input
-              placeholder="Поиск по номеру или клиенту..."
-              className="pl-10 h-12"
-              value={existingOrderSearch}
-              onChange={(e) => setExistingOrderSearch(e.target.value)}
-              data-testid="input-existing-search"
-            />
-          </div>
+        {/* ── FOUND: show order card + action buttons ── */}
+        {orderFound && (
+          <Card className="border-primary/30 bg-primary/5">
+            <div className="p-5 space-y-4">
+              {/* Header */}
+              <div className="flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-primary" />
+                <span className="font-bold text-lg">Заказ №{existingOrder!.number}</span>
+                {existingOrder!.customer && (
+                  <span className="text-muted-foreground">{existingOrder!.customer}</span>
+                )}
+                <Badge variant="secondary" className="ml-auto">
+                  {existingBoxes.length} коробок
+                </Badge>
+              </div>
 
-          {/* Order list */}
-          <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-            {filteredOrders.length === 0 ? (
-              <p className="text-center text-muted-foreground py-6">Заказы не найдены</p>
-            ) : (
-              filteredOrders.map((order) => {
-                const isSelected = existingOrderId === order.id.toString();
-                const inStockCount = allBoxes?.filter(
-                  (b) => b.orderId === order.id && b.status === "in_stock"
-                ).length ?? 0;
-                return (
-                  <button
-                    key={order.id}
-                    data-testid={`existing-order-${order.id}`}
-                    className={cn(
-                      "w-full text-left rounded-xl border-2 px-4 py-3 transition-all",
-                      isSelected
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/40 hover:bg-muted/30"
-                    )}
-                    onClick={() => setExistingOrderId(order.id.toString())}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="font-bold">№{order.number}</span>
-                        {order.customer && (
-                          <span className="ml-2 text-muted-foreground text-sm">{order.customer}</span>
-                        )}
-                      </div>
-                      <Badge variant="outline" className="text-xs">
-                        {inStockCount} коробок
-                      </Badge>
+              {/* Photos from first box */}
+              {(firstBoxPhoto || firstBoxSticker) && (
+                <div className="flex gap-3">
+                  {firstBoxPhoto && (
+                    <div className="flex-1">
+                      <p className="text-xs text-muted-foreground mb-1">Содержимое</p>
+                      <img
+                        src={firstBoxPhoto}
+                        className="w-full aspect-video object-cover rounded-lg border"
+                        alt=""
+                      />
                     </div>
-                    {order.createdAt && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {new Date(order.createdAt).toLocaleDateString("ru-RU")}
-                      </p>
-                    )}
-                  </button>
-                );
-              })
-            )}
-          </div>
-
-          {/* Selected order card */}
-          {existingOrder && (
-            <Card className="border-primary/30 bg-primary/5">
-              <div className="p-5 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Building2 className="w-5 h-5 text-primary" />
-                  <span className="font-bold text-lg">Заказ №{existingOrder.number}</span>
-                  {existingOrder.customer && (
-                    <span className="text-muted-foreground">{existingOrder.customer}</span>
+                  )}
+                  {firstBoxSticker && (
+                    <div className="flex-1">
+                      <p className="text-xs text-muted-foreground mb-1">Этикетка</p>
+                      <img
+                        src={firstBoxSticker}
+                        className="w-full aspect-video object-contain rounded-lg border bg-black"
+                        alt=""
+                      />
+                    </div>
                   )}
                 </div>
+              )}
 
-                <div className="grid grid-cols-2 gap-3 text-sm">
+              {/* Meta */}
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                {existingLocation && (
                   <div>
-                    <p className="text-muted-foreground text-xs">Коробок на складе</p>
+                    <p className="text-muted-foreground text-xs">Текущее место</p>
                     <p className="font-semibold flex items-center gap-1">
-                      <Package className="w-3.5 h-3.5" />
-                      {existingBoxes.length}
+                      <MapPin className="w-3.5 h-3.5" />
+                      {existingLocation.name}
                     </p>
                   </div>
-                  {existingLocation && (
-                    <div>
-                      <p className="text-muted-foreground text-xs">Текущее место</p>
-                      <p className="font-semibold flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5" />
-                        {existingLocation.name}
-                      </p>
-                    </div>
-                  )}
-                  {firstBoxDesc && (
-                    <div className="col-span-2">
-                      <p className="text-muted-foreground text-xs">Описание</p>
-                      <p className="font-semibold">{firstBoxDesc}</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Action buttons */}
-                <div className="grid grid-cols-2 gap-3 pt-1">
-                  <Button
-                    className="h-14 flex-col gap-1 text-sm"
-                    onClick={handleAddSame}
-                    data-testid="btn-add-same"
-                  >
-                    <PlusCircle className="w-5 h-5" />
-                    Добавить коробки
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="h-14 flex-col gap-1 text-sm"
-                    onClick={handleAddNewType}
-                    data-testid="btn-add-new-type"
-                  >
-                    <Layers className="w-5 h-5" />
-                    Новый тип<span className="text-xs text-muted-foreground">({existingOrder.number}/…)</span>
-                  </Button>
-                </div>
+                )}
+                {firstBoxDesc && (
+                  <div className={existingLocation ? "" : "col-span-2"}>
+                    <p className="text-muted-foreground text-xs">Описание</p>
+                    <p className="font-semibold">{firstBoxDesc}</p>
+                  </div>
+                )}
               </div>
-            </Card>
-          )}
-        </div>
-      )}
-    </div>
-  );
+
+              {/* Action buttons */}
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <Button
+                  className="h-14 flex-col gap-1 text-sm"
+                  onClick={handleAddSame}
+                  data-testid="btn-add-same"
+                >
+                  <PlusCircle className="w-5 h-5" />
+                  Добавить коробки
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-14 flex-col gap-1 text-sm"
+                  onClick={handleAddNewType}
+                  data-testid="btn-add-new-type"
+                >
+                  <Layers className="w-5 h-5" />
+                  <span>Новый тип</span>
+                  <span className="text-xs text-muted-foreground">
+                    ({existingOrder!.number}/…)
+                  </span>
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* ── NOT FOUND: input has text but no match → offer "New order" ── */}
+        {!orderFound && hasInput && (
+          <div className="space-y-3">
+            <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl text-sm text-amber-800 dark:text-amber-200">
+              Заказ <strong>«{orderSearch}»</strong> не найден в системе
+            </div>
+            <Button
+              className="w-full h-14 gap-2 text-base"
+              onClick={handleCreateNew}
+              data-testid="btn-create-new"
+            >
+              <ArrowRight className="w-5 h-5" />
+              Создать новый заказ №{orderSearch}
+            </Button>
+          </div>
+        )}
+
+        {/* ── NOTHING entered yet ── */}
+        {!hasInput && (
+          <p className="text-center text-muted-foreground py-4 text-sm">
+            Введите номер заказа, выберите из списка или сканируйте QR
+          </p>
+        )}
+      </div>
+    );
+  };
 
   // ── Step 2: PHOTOS ────────────────────────────────────────────────────────
   const renderPhotos = () => (
@@ -564,7 +549,7 @@ export default function BoxRegistrationWizard() {
         {/* Product photos */}
         <div className="space-y-3">
           <h3 className="font-semibold text-base flex items-center gap-2">
-            <Package className="w-4 h-4" /> Фото содержимого
+            <Package className="w-4 h-4" /> Содержимое
           </h3>
           <CameraCapture
             onCapture={(src) =>
@@ -604,7 +589,7 @@ export default function BoxRegistrationWizard() {
         {/* Sticker photo */}
         <div className="space-y-3">
           <h3 className="font-semibold text-base flex items-center gap-2">
-            <QrCode className="w-4 h-4" /> Фото этикетки
+            <QrCode className="w-4 h-4" /> Этикетка
           </h3>
           <CameraCapture
             onCapture={(src) => updateField("stickerPhoto", src)}
@@ -637,23 +622,17 @@ export default function BoxRegistrationWizard() {
   // ── Step 3: BOX_DETAILS ───────────────────────────────────────────────────
   const renderBoxDetails = () => (
     <div className="space-y-6">
-      {/* Mode badge */}
       {mode !== "new" && (
         <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl text-sm">
           {mode === "add_same" ? (
             <>
               <PlusCircle className="w-4 h-4 text-blue-600" />
-              <span>
-                Добавление в заказ <strong>№{existingOrder?.number}</strong>
-              </span>
+              <span>Добавление в заказ <strong>№{existingOrder?.number}</strong></span>
             </>
           ) : (
             <>
               <Layers className="w-4 h-4 text-blue-600" />
-              <span>
-                Новый тип — номер заказа:{" "}
-                <strong>{formData.manualOrderNumber}</strong>
-              </span>
+              <span>Новый тип — номер: <strong>{formData.manualOrderNumber}</strong></span>
             </>
           )}
         </div>
@@ -663,9 +642,7 @@ export default function BoxRegistrationWizard() {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label className="text-base font-semibold">Коробок</Label>
-            <p className="text-xs text-muted-foreground">
-              Сколько коробок регистрировать за этот раз
-            </p>
+            <p className="text-xs text-muted-foreground">Сколько регистрировать за раз</p>
             <Input
               type="number"
               min="1"
@@ -681,9 +658,7 @@ export default function BoxRegistrationWizard() {
           <div className="space-y-2">
             <Label className="text-base font-semibold">
               Описание{" "}
-              <span className="text-muted-foreground font-normal text-sm">
-                (необязательно)
-              </span>
+              <span className="text-muted-foreground font-normal text-sm">(необязательно)</span>
             </Label>
             {mode === "add_same" && firstBoxDesc && (
               <p className="text-xs text-blue-600 flex items-center gap-1">
@@ -693,16 +668,16 @@ export default function BoxRegistrationWizard() {
             <Textarea
               value={formData.description}
               onChange={(e) => updateField("description", e.target.value)}
-              placeholder="напр. листовки формата А4, 500 шт"
+              placeholder="напр. листовки А4, 500 шт"
               className="min-h-[100px] text-base resize-none"
               data-testid="input-description"
             />
           </div>
         </div>
 
-        {/* Right: summary of photos already taken */}
+        {/* Right: photo summary */}
         <div className="space-y-3">
-          <Label className="text-base font-semibold">Фото (добавлены на шаге 2)</Label>
+          <Label className="text-base font-semibold">Фото (шаг «Фото»)</Label>
           {formData.productPhotos.length === 0 && !formData.stickerPhoto ? (
             <div className="py-8 text-center text-muted-foreground border-2 border-dashed rounded-lg text-sm">
               Фото не добавлены
@@ -712,12 +687,7 @@ export default function BoxRegistrationWizard() {
               {formData.productPhotos.length > 0 && (
                 <div className="grid grid-cols-2 gap-2">
                   {formData.productPhotos.map((src, i) => (
-                    <img
-                      key={i}
-                      src={src}
-                      className="w-full aspect-video object-cover rounded-lg border"
-                      alt=""
-                    />
+                    <img key={i} src={src} className="w-full aspect-video object-cover rounded-lg border" alt="" />
                   ))}
                 </div>
               )}
@@ -739,8 +709,7 @@ export default function BoxRegistrationWizard() {
       {parseInt(formData.boxCount) > 1 && (
         <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-blue-800 dark:text-blue-200 text-sm">
           <Package className="w-4 h-4 inline mr-2" />
-          Будет зарегистрировано <strong>{formData.boxCount} коробки</strong> с
-          одинаковыми фото и описанием
+          Будет зарегистрировано <strong>{formData.boxCount} коробки</strong> с одинаковыми фото и описанием
         </div>
       )}
     </div>
@@ -749,13 +718,11 @@ export default function BoxRegistrationWizard() {
   // ── Step 4: LOCATION_SELECT ───────────────────────────────────────────────
   const renderLocationSelect = () => (
     <div className="space-y-6">
-      {/* Existing location hint for add_same mode */}
       {mode === "add_same" && existingLocation && (
         <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-sm flex items-center gap-2">
           <MapPin className="w-4 h-4 text-amber-600 flex-shrink-0" />
           <span>
-            Заказ уже находится:{" "}
-            <strong>{existingLocation.name}</strong> — можно оставить или выбрать другое
+            Заказ уже находится: <strong>{existingLocation.name}</strong> — можно оставить или выбрать другое
           </span>
         </div>
       )}
@@ -771,42 +738,32 @@ export default function BoxRegistrationWizard() {
         />
 
         <div className="my-6 relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
+          <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">
-              или выбрать из списка
-            </span>
+            <span className="bg-background px-2 text-muted-foreground">или выбрать из списка</span>
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Select
-            value={formData.locationId?.toString()}
-            onValueChange={(val) => {
-              updateField("locationId", parseInt(val));
-              updateField("locationUuid", "");
-            }}
-          >
-            <SelectTrigger className="h-12">
-              <SelectValue placeholder="Выберите местоположение..." />
-            </SelectTrigger>
-            <SelectContent>
-              {locations?.map((l) => (
-                <SelectItem key={l.id} value={l.id.toString()}>
-                  {l.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <Select
+          value={formData.locationId?.toString()}
+          onValueChange={(val) => {
+            updateField("locationId", parseInt(val));
+            updateField("locationUuid", "");
+          }}
+        >
+          <SelectTrigger className="h-12">
+            <SelectValue placeholder="Выберите местоположение..." />
+          </SelectTrigger>
+          <SelectContent>
+            {locations?.map((l) => (
+              <SelectItem key={l.id} value={l.id.toString()}>{l.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         {selectedLocation && (
           <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-            <p className="font-semibold text-blue-900 dark:text-blue-100">
-              Местоположение выбрано:
-            </p>
+            <p className="font-semibold text-blue-900 dark:text-blue-100">Местоположение выбрано:</p>
             <p className="text-lg">{selectedLocation.name}</p>
           </div>
         )}
@@ -824,15 +781,11 @@ export default function BoxRegistrationWizard() {
         <Card className="p-6 space-y-4">
           <div className="flex items-center gap-2 text-green-600 mb-2">
             <Check className="w-6 h-6" />
-            <span className="font-bold text-xl uppercase tracking-tight">
-              Успешно сохранено
-            </span>
+            <span className="font-bold text-xl uppercase tracking-tight">Успешно сохранено</span>
           </div>
 
           <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg text-center">
-            <p className="text-3xl font-bold text-green-700 dark:text-green-300">
-              {registeredCount}
-            </p>
+            <p className="text-3xl font-bold text-green-700 dark:text-green-300">{registeredCount}</p>
             <p className="text-sm text-green-600 dark:text-green-400">
               {registeredCount === 1
                 ? "коробка зарегистрирована"
@@ -864,19 +817,10 @@ export default function BoxRegistrationWizard() {
               <span className="text-muted-foreground text-sm">Фото:</span>
               <div className="flex gap-2 overflow-x-auto pb-2">
                 {formData.productPhotos.map((src, i) => (
-                  <img
-                    key={i}
-                    src={src}
-                    className="h-20 w-auto rounded-lg border"
-                    alt=""
-                  />
+                  <img key={i} src={src} className="h-20 w-auto rounded-lg border" alt="" />
                 ))}
                 {formData.stickerPhoto && (
-                  <img
-                    src={formData.stickerPhoto}
-                    className="h-20 w-auto rounded-lg border"
-                    alt=""
-                  />
+                  <img src={formData.stickerPhoto} className="h-20 w-auto rounded-lg border" alt="" />
                 )}
               </div>
             </div>
@@ -886,14 +830,14 @@ export default function BoxRegistrationWizard() {
     );
   };
 
-  // ── Render step ───────────────────────────────────────────────────────────
+  // ── Dispatch ──────────────────────────────────────────────────────────────
   const renderStep = () => {
     switch (currentStep) {
-      case Step.ORDER_SELECT:   return renderOrderSelect();
-      case Step.PHOTOS:         return renderPhotos();
-      case Step.BOX_DETAILS:    return renderBoxDetails();
-      case Step.LOCATION_SELECT:return renderLocationSelect();
-      case Step.REVIEW:         return renderReview();
+      case Step.ORDER_SELECT:    return renderOrderSelect();
+      case Step.PHOTOS:          return renderPhotos();
+      case Step.BOX_DETAILS:     return renderBoxDetails();
+      case Step.LOCATION_SELECT: return renderLocationSelect();
+      case Step.REVIEW:          return renderReview();
     }
   };
 
@@ -902,17 +846,22 @@ export default function BoxRegistrationWizard() {
   // ════════════════════════════════════════════════════════════════════════════
   return (
     <div className="max-w-2xl mx-auto pb-24">
-      {/* Progress bar */}
+      {/* Progress bar with step names */}
       <div className="mb-8">
         <div className="flex justify-between mb-2">
-          {STEP_TITLES.map((title, i) => (
+          {STEP_LABELS.map((label, i) => (
             <div
               key={i}
-              className={`text-xs font-semibold uppercase tracking-wider ${
-                i <= currentStep ? "text-primary" : "text-muted-foreground/30"
-              }`}
+              className={cn(
+                "text-xs font-semibold uppercase tracking-wider transition-colors",
+                i < currentStep
+                  ? "text-primary/60"
+                  : i === currentStep
+                  ? "text-primary"
+                  : "text-muted-foreground/30"
+              )}
             >
-              Шаг {i + 1}
+              {label}
             </div>
           ))}
         </div>
@@ -920,9 +869,7 @@ export default function BoxRegistrationWizard() {
           <motion.div
             className="h-full bg-primary"
             initial={{ width: 0 }}
-            animate={{
-              width: `${((currentStep + 1) / STEP_TITLES.length) * 100}%`,
-            }}
+            animate={{ width: `${((currentStep + 1) / STEP_LABELS.length) * 100}%` }}
             transition={{ duration: 0.3 }}
           />
         </div>
@@ -967,14 +914,11 @@ export default function BoxRegistrationWizard() {
             Зарегистрировать
           </Button>
         ) : currentStep === Step.REVIEW ? (
-          <Button
-            className="h-14 px-8 text-lg"
-            onClick={() => setLocation("/")}
-          >
+          <Button className="h-14 px-8 text-lg" onClick={() => setLocation("/")}>
             На главную
           </Button>
-        ) : currentStep === Step.ORDER_SELECT && orderTab === "existing" ? (
-          // In "existing" tab, advance is handled by action buttons — hide Next
+        ) : currentStep === Step.ORDER_SELECT ? (
+          // Step 1: navigation is handled by inline buttons
           <span />
         ) : (
           <Button
