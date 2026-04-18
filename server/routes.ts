@@ -12,7 +12,7 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  
+
   // === MIDDLEWARE ===
   app.use(session({
     cookie: { maxAge: 86400000 },
@@ -32,9 +32,9 @@ export async function registerRoutes(
     const { username, password } = req.body;
     // Simple mock auth logic as per PDF requirements
     // In real app, check password hash. Here, "any password works".
-    
+
     let user = await storage.getUserByUsername(username);
-    
+
     if (!user) {
       // Create user on fly if not exists (for demo purposes as per "mock" feel)
       // Or reject. PDF says: "email includes admin -> role admin, else operator"
@@ -78,19 +78,19 @@ export async function registerRoutes(
     try {
       const input = api.orders.create.input.parse(req.body);
       const order = await storage.createOrder(input);
-      
+
       // Audit
       // @ts-ignore
       if (req.session.userId) {
         // @ts-ignore
         const user = await storage.getUser(req.session.userId);
         await storage.createAuditLog({
-            userId: user!.id,
-            userName: user!.name,
-            actionType: 'create',
-            entityType: 'order',
-            entityId: String(order.id),
-            details: { input }
+          userId: user!.id,
+          userName: user!.name,
+          actionType: 'create',
+          entityType: 'order',
+          entityId: String(order.id),
+          details: { input }
         });
       }
 
@@ -121,20 +121,20 @@ export async function registerRoutes(
 
   app.post(api.boxes.create.path, async (req, res) => {
     try {
-        console.log("Creating box with payload:", JSON.stringify(req.body, null, 2));
-        const input = api.boxes.create.input.parse(req.body);
-        const box = await storage.createBox(input);
-        res.status(201).json(box);
+      console.log("Creating box with payload:", JSON.stringify(req.body, null, 2));
+      const input = api.boxes.create.input.parse(req.body);
+      const box = await storage.createBox(input);
+      res.status(201).json(box);
     } catch (e: any) {
-        console.error("BOX CREATION ERROR:", e);
-        if (e instanceof z.ZodError) {
-            console.error("Zod Validation Error:", JSON.stringify(e.errors, null, 2));
-            return res.status(400).json({ message: "Validation failed", errors: e.errors });
-        }
-        res.status(400).json({ 
-          message: "Internal error during creation", 
-          error: e.message 
-        });
+      console.error("BOX CREATION ERROR:", e);
+      if (e instanceof z.ZodError) {
+        console.error("Zod Validation Error:", JSON.stringify(e.errors, null, 2));
+        return res.status(400).json({ message: "Validation failed", errors: e.errors });
+      }
+      res.status(400).json({
+        message: "Internal error during creation",
+        error: e.message
+      });
     }
   });
 
@@ -202,8 +202,8 @@ export async function registerRoutes(
   });
 
   app.get(api.boxes.stats.path, async (req, res) => {
-      const stats = await storage.getBoxStats();
-      res.json(stats);
+    const stats = await storage.getBoxStats();
+    res.json(stats);
   });
 
   app.get(api.boxes.shippedReport.path, async (req, res) => {
@@ -218,72 +218,72 @@ export async function registerRoutes(
 
   // === MATERIALS ===
   app.get(api.materials.list.path, async (req, res) => {
-      const mats = await storage.getMaterials();
-      res.json(mats);
+    const mats = await storage.getMaterials();
+    res.json(mats);
   });
-  
+
   app.post(api.materials.create.path, async (req, res) => {
-      try {
-          const input = api.materials.create.input.parse(req.body);
-          const mat = await storage.createMaterial(input);
-          res.status(201).json(mat);
-      } catch (e) {
-          res.status(400).json({ message: "Invalid input" });
-      }
+    try {
+      const input = api.materials.create.input.parse(req.body);
+      const mat = await storage.createMaterial(input);
+      res.status(201).json(mat);
+    } catch (e) {
+      res.status(400).json({ message: "Invalid input" });
+    }
   });
 
   // === LOCATIONS ===
   app.get(api.locations.list.path, async (req, res) => {
-      const locs = await storage.getLocations();
-      res.json(locs);
+    const locs = await storage.getLocations();
+    res.json(locs);
   });
 
   app.get(api.locations.getByQr.path, async (req, res) => {
-      const loc = await storage.getLocationByQr(req.params.uuid);
-      if (!loc) return res.status(404).json({ message: "Location not found" });
-      res.json(loc);
+    const loc = await storage.getLocationByQr(req.params.uuid);
+    if (!loc) return res.status(404).json({ message: "Location not found" });
+    res.json(loc);
   });
 
   app.post(api.locations.create.path, async (req, res) => {
-      try {
-        const input = api.locations.create.input.parse(req.body);
-        const loc = await storage.createLocation(input);
-        res.status(201).json(loc);
-      } catch(e) {
-        res.status(400).json({ message: "Invalid input" });
-      }
+    try {
+      const input = api.locations.create.input.parse(req.body);
+      const loc = await storage.createLocation(input);
+      res.status(201).json(loc);
+    } catch (e) {
+      res.status(400).json({ message: "Invalid input" });
+    }
   });
 
   // === AUDIT ===
   app.get(api.audit.list.path, async (req, res) => {
-      const logs = await storage.getAuditLogs();
-      res.json(logs);
+    const logs = await storage.getAuditLogs();
+    res.json(logs);
   });
 
   app.patch(api.orders.get.path, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const data = req.body;
-      
+
       // If we are resetting status to active, also clear completedAt
       if (data.status === 'active') {
         data.completedAt = null;
       }
-      
+
       const order = await storage.updateOrder(id, data);
-      
+
       // Audit
       // @ts-ignore
       if (req.session.userId) {
         // @ts-ignore
         const user = await storage.getUser(req.session.userId);
         await storage.createAuditLog({
-            userId: user!.id,
-            userName: user!.name,
-            actionType: 'update',
-            entityType: 'order',
-            entityId: String(order.id),
-            details: data
+          userId: user!.id,
+          userName: user!.name,
+          actionType: 'update',
+          entityType: 'order',
+          entityId: String(order.id),
+          details: data
         });
       }
 
@@ -296,23 +296,23 @@ export async function registerRoutes(
   app.patch(api.orders.complete.path, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const order = await storage.updateOrder(id, { 
+      const order = await storage.updateOrder(id, {
         status: 'completed',
         completedAt: new Date()
       });
-      
+
       // Audit
       // @ts-ignore
       if (req.session.userId) {
         // @ts-ignore
         const user = await storage.getUser(req.session.userId);
         await storage.createAuditLog({
-            userId: user!.id,
-            userName: user!.name,
-            actionType: 'update',
-            entityType: 'order',
-            entityId: String(order.id),
-            details: { status: 'completed' }
+          userId: user!.id,
+          userName: user!.name,
+          actionType: 'update',
+          entityType: 'order',
+          entityId: String(order.id),
+          details: { status: 'completed' }
         });
       }
 
@@ -327,19 +327,19 @@ export async function registerRoutes(
       const id = parseInt(req.params.id);
       const input = insertBoxSchema.partial().parse(req.body);
       const box = await storage.updateBox(id, input);
-      
+
       // Audit
       // @ts-ignore
       if (req.session.userId) {
         // @ts-ignore
         const user = await storage.getUser(req.session.userId);
         await storage.createAuditLog({
-            userId: user!.id,
-            userName: user!.name,
-            actionType: 'update',
-            entityType: 'box',
-            entityId: String(box.id),
-            details: { updates: input }
+          userId: user!.id,
+          userName: user!.name,
+          actionType: 'update',
+          entityType: 'box',
+          entityId: String(box.id),
+          details: { updates: input }
         });
       }
 
@@ -352,25 +352,25 @@ export async function registerRoutes(
   app.patch(api.boxes.ship.path, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const box = await storage.updateBox(id, { 
+      const box = await storage.updateBox(id, {
         status: 'shipped',
         shippedAt: new Date(),
         // @ts-ignore
         shippedBy: req.session.userId || 1
       });
-      
+
       // Audit
       // @ts-ignore
       if (req.session.userId) {
         // @ts-ignore
         const user = await storage.getUser(req.session.userId);
         await storage.createAuditLog({
-            userId: user!.id,
-            userName: user!.name,
-            actionType: 'ship',
-            entityType: 'box',
-            entityId: String(box.id),
-            details: { status: 'shipped' }
+          userId: user!.id,
+          userName: user!.name,
+          actionType: 'ship',
+          entityType: 'box',
+          entityId: String(box.id),
+          details: { status: 'shipped' }
         });
       }
 
@@ -384,7 +384,7 @@ export async function registerRoutes(
     try {
       const id = parseInt(req.params.id);
       const { reason } = req.body;
-      const mat = await storage.updateMaterial(id, { 
+      const mat = await storage.updateMaterial(id, {
         status: 'issued',
         issuedAt: new Date(),
         issuedReason: reason
@@ -410,6 +410,17 @@ export async function registerRoutes(
 
 async function seedDatabase() {
   const existingLocs = await storage.getLocations();
+  let adminUser = await storage.getUser(1);
+  if (!adminUser) {
+    adminUser = await storage.createUser({
+      username: "admin@example.com",
+      password: "hashed_password",   // пароль не важен для тестов, можно любой
+      name: "Administrator",
+      role: "admin",
+      isActive: true
+    });
+    console.log('Created admin user with id', adminUser.id);
+  }
   let locs = existingLocs;
   if (existingLocs.length === 0) {
     const l1 = await storage.createLocation({ name: 'Стеллаж А, Полка 1', qrUuid: 'loc-a1', isActive: true });
@@ -422,16 +433,16 @@ async function seedDatabase() {
   const existingOrders = await storage.getOrders();
   // FORCE RE-SEEDING OF BOXES IF THEY ARE MISSING
   const existingBoxes = await storage.getBoxes();
-  
+
   if (existingOrders.length === 0 || existingBoxes.length === 0) {
     // Clear potentially partial data to avoid unique constraint violations on orders
     if (existingOrders.length > 0) {
-       // We can't easily delete via storage without more methods, 
-       // but we can try to find the orders or just proceed if number is unique
+      // We can't easily delete via storage without more methods, 
+      // but we can try to find the orders or just proceed if number is unique
     }
 
     let o1, o2, o3;
-    
+
     const findOrCreateOrder = async (num: string, cust: string) => {
       const existing = await storage.getOrders('active', num);
       const match = existing.find(o => o.number === num);
@@ -442,7 +453,7 @@ async function seedDatabase() {
     o1 = await findOrCreateOrder('ORD-1001', 'Acme Corp');
     o2 = await findOrCreateOrder('ORD-1002', 'Globex');
     o3 = await findOrCreateOrder('ORD-1003', 'Cyberdyne');
-    
+
     console.log('Orders ready for boxes');
 
     if (existingBoxes.length === 0) {
