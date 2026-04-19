@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
+import { insertBoxSchema } from "@shared/schema";
 import session from "express-session";
 import MemoryStore from "memorystore";
 
@@ -480,8 +481,7 @@ async function seedDatabase() {
         stickerPhoto: stickerImages[0],
         problemType: null,
         problemDesc: null,
-        createdBy: 1,
-        shippedBy: null
+        createdBy: 1
       });
 
       await storage.createBox({
@@ -496,8 +496,7 @@ async function seedDatabase() {
         stickerPhoto: stickerImages[1],
         problemType: null,
         problemDesc: null,
-        createdBy: 1,
-        shippedBy: null
+        createdBy: 1
       });
 
       await storage.createBox({
@@ -512,8 +511,7 @@ async function seedDatabase() {
         stickerPhoto: stickerImages[0],
         problemType: null,
         problemDesc: null,
-        createdBy: 1,
-        shippedBy: null
+        createdBy: 1
       });
 
       await storage.createBox({
@@ -528,8 +526,7 @@ async function seedDatabase() {
         stickerPhoto: stickerImages[1],
         problemType: null,
         problemDesc: null,
-        createdBy: 1,
-        shippedBy: null
+        createdBy: 1
       });
 
       await storage.createBox({
@@ -544,8 +541,7 @@ async function seedDatabase() {
         stickerPhoto: stickerImages[0],
         problemType: null,
         problemDesc: null,
-        createdBy: 1,
-        shippedBy: null
+        createdBy: 1
       });
 
       await storage.createBox({
@@ -560,8 +556,7 @@ async function seedDatabase() {
         stickerPhoto: stickerImages[1],
         problemType: null,
         problemDesc: null,
-        createdBy: 1,
-        shippedBy: null
+        createdBy: 1
       });
       console.log('Seeded mock boxes');
     }

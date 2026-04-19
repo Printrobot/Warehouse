@@ -65,8 +65,8 @@ export default function Login() {
             />
           </div>
 
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             className="w-full h-12 text-lg font-medium bg-primary hover:bg-primary/90"
             disabled={isLoggingIn}
           >
@@ -75,10 +75,23 @@ export default function Login() {
             ) : "Sign In"}
           </Button>
 
-          <div className="text-center text-xs text-slate-500 mt-4">
-            <p>Demo Credentials:</p>
-            <p>Admin: admin / admin</p>
-            <p>Operator: operator / operator</p>
+          <div className="text-center text-xs text-slate-500 mt-4 space-y-2">
+            <div>
+              <p>Demo Credentials:</p>
+              <p>Admin: admin / admin</p>
+              <p>Operator: operator / operator</p>
+            </div>
+
+            <div className="pt-2 border-t border-slate-800">
+              <a
+                href="/business_value.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline font-medium"
+              >
+                Зачем типографии эта система? (Презентация)
+              </a>
+            </div>
           </div>
         </form>
       </Card>

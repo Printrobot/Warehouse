@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warehouse OS | PrintLogix</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Phosphor Icons (Modern & clean icons) -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+        .gradient-text {
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-image: linear-gradient(to right, #2563eb, #0ea5e9);
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased selection:bg-brand-100 selection:text-brand-900">
+
+    <!-- Hero Section -->
+    <header class="relative bg-white border-b border-slate-200 overflow-hidden">
+        <div class="absolute inset-0 bg-brand-50 transform -skew-y-2 translate-y-10 -z-10"></div>
+        <div class="max-w-5xl mx-auto px-6 py-20 lg:py-24 relative z-10">
+            <div class="inline-flex items-center gap-2 px-3 py-1 bg-brand-100 text-brand-600 rounded-full text-sm font-medium mb-6">
+                <i class="ph ph-rocket-launch"></i> Коммерческое предложение
+            </div>
+            <h1 class="text-4xl lg:text-5xl font-bold leading-tight mb-6">
+                Зачем типографии цифровая система склада <span class="gradient-text">Warehouse OS?</span>
+            </h1>
+            <p class="text-xl text-slate-600 max-w-3xl leading-relaxed">
+                Ваш склад — это кровеносная система производства. Когда готовых заказов становится много, а на полках лежат рулоны сырья, обрезки и давальческие материалы от разных клиентов, возникает хаос. <strong>Warehouse OS (PrintLogix)</strong> разработана специально для того, чтобы превратить этот хаос в управляемую и прозрачную систему.
+            </p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-5xl mx-auto px-6 py-16 space-y-20">
+
+        <!-- Problems Section -->
+        <section>
+            <div class="flex items-center gap-3 mb-8">
+                <div class="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+                    <i class="ph ph-warning-circle text-xl"></i>
+                </div>
+                <h2 class="text-3xl font-bold">С какими проблемами типографии мы боремся?</h2>
+            </div>
+            
+            <p class="text-lg text-slate-600 mb-8">
+                По статистике и нашему опыту, склад типографии теряет деньги каждый день из-за следующих «узких мест»:
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="glass-card p-6 rounded-2xl border-l-4 border-l-red-500">
+                    <h3 class="text-lg font-bold mb-2 flex items-center gap-2">
+                        <i class="ph ph-clock text-red-500"></i> «Где этот заказ?!»
+                    </h3>
+                    <p class="text-slate-600">Найти нужный тираж среди сотен одинаковых коробок может занимать от 10 до 15 минут. Это прямая потеря времени.</p>
+                </div>
+                
+                <div class="glass-card p-6 rounded-2xl border-l-4 border-l-red-500">
+                    <h3 class="text-lg font-bold mb-2 flex items-center gap-2">
+                        <i class="ph ph-user-minus text-red-500"></i> Ошибки человеческого фактора
+                    </h3>
+                    <p class="text-slate-600">Кладовщик написал стикер маркером неразборчиво, перепутал номера заказов — тираж уехал не тому клиенту.</p>
+                </div>
+
+                <div class="glass-card p-6 rounded-2xl border-l-4 border-l-orange-500">
+                    <h3 class="text-lg font-bold mb-2 flex items-center gap-2">
+                        <i class="ph ph-puzzle-piece text-orange-500"></i> Разорванные заказы
+                    </h3>
+                    <p class="text-slate-600">Коробки одного тиража могут лежать на разных стеллажах, и при отгрузке часть заказа рискует остаться на складе.</p>
+                </div>
+
+                <div class="glass-card p-6 rounded-2xl border-l-4 border-l-orange-500">
+                    <h3 class="text-lg font-bold mb-2 flex items-center gap-2">
+                        <i class="ph ph-package text-orange-500"></i> Потеря материалов клиента
+                    </h3>
+                    <p class="text-slate-600">Типичная ситуация — нужно срочно найти «вот ту серую бумагу Игоря», но никто не помнит, куда ее положили.</p>
+                </div>
+
+                <div class="glass-card p-6 rounded-2xl border-l-4 border-l-slate-800 md:col-span-2">
+                    <h3 class="text-lg font-bold mb-2 flex items-center gap-2">
+                        <i class="ph ph-eye-closed text-slate-800"></i> Слепая зона для руководства
+                    </h3>
+                    <p class="text-slate-600">Директор не видит реальной статистики: сколько коробок на складе, сколько времени заказы лежат мертвым грузом, кто из операторов работает быстрее всех.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Solution Section -->
+        <section class="bg-slate-900 text-white rounded-3xl p-8 lg:p-12 shadow-xl relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
+                <i class="ph ph-shield-check text-9xl"></i>
+            </div>
+            
+            <div class="relative z-10">
+                <div class="flex items-center gap-3 mb-8">
+                    <div class="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                        <i class="ph ph-check-circle text-xl"></i>
+                    </div>
+                    <h2 class="text-3xl font-bold">Решение: Как Warehouse OS решает эти проблемы</h2>
+                </div>
+
+                <p class="text-lg text-slate-300 mb-8 max-w-3xl">
+                    Наш проект — это не просто табличка в Excel. Это полноценная система для управления складом (WMS), оптимизированная для работы "на лету", прямо с телефона в перчатках или с планшета на погрузчике.
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4 text-emerald-400 border-b border-slate-700 pb-2">Ключевые принципы системы:</h3>
+                        <ul class="space-y-4">
+                            <li class="flex items-start gap-3">
+                                <i class="ph ph-scan text-emerald-400 mt-1"></i>
+                                <span><strong>Zero-manual-entry (Никакой ручной работы):</strong> Максимум автоматизации — сканирование QR-кодов, фотофиксация вместо долгих описаний.</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <i class="ph ph-users text-emerald-400 mt-1"></i>
+                                <span><strong>Две простые роли:</strong> «Оператор» (работает на складе) и «Администратор» (управляет, смотрит статистику, контролирует).</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4 text-brand-400 border-b border-slate-700 pb-2">Выгоды для бизнеса:</h3>
+                        <ul class="space-y-4 text-brand-50">
+                            <li class="flex items-start gap-3">
+                                <i class="ph ph-lightning text-brand-400 mt-1"></i>
+                                <span><strong>Ускорение логистики:</strong> Поиск заказа сокращается с 10 минут до <strong>10 секунд</strong>.</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <i class="ph ph-map-pin text-brand-400 mt-1"></i>
+                                <span><strong>Никаких потерянных материалов:</strong> Вы всегда знаете, на какой полке лежит давальческое сырье или штанцформы.</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <i class="ph ph-chart-line-up text-brand-400 mt-1"></i>
+                                <span><strong>100% прозрачность:</strong> Зашли с телефона утром — увидели, сколько коробок готово к отгрузке и есть ли проблемные заказы.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Done Section -->
+        <section>
+            <div class="flex items-center gap-3 mb-8">
+                <div class="w-10 h-10 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center shadow-inner">
+                    <i class="ph ph-rocket text-xl"></i>
+                </div>
+                <h2 class="text-3xl font-bold">Что уже реализовано и РАБОТАЕТ прямо сейчас</h2>
+            </div>
+            
+            <p class="text-lg text-slate-600 mb-8 max-w-3xl">
+                Вот что вы уже сейчас можете попробовать на демо-сервере проекта:
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Feature 1 -->
+                <div class="glass-card p-6 rounded-2xl hover:shadow-lg transition-shadow duration-300">
+                    <div class="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4">
+                        <i class="ph ph-database text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Полноценный бэкенд и База Данных</h3>
+                    <p class="text-slate-600 text-sm">Вместо "заглушек" работает реальный высокопроизводительный сервер (Node.js) и подключена промышленная база данных <strong>PostgreSQL</strong>. Физически данные сохраняются и не удалятся после обновления страницы.</p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="glass-card p-6 rounded-2xl hover:shadow-lg transition-shadow duration-300">
+                    <div class="w-10 h-10 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center mb-4">
+                        <i class="ph ph-key text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Управление ролями и доступом</h3>
+                    <p class="text-slate-600 text-sm">Полностью рабочая система авторизации. Администратор имеет доступ к аналитике и истории действий.</p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="glass-card p-6 rounded-2xl hover:shadow-lg transition-shadow duration-300">
+                    <div class="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center mb-4">
+                        <i class="ph ph-device-mobile text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Современный адаптивный интерфейс</h3>
+                    <p class="text-slate-600 text-sm">Система выглядит дорого и современно (используется передовой стек UI-компонентов Shadcn). Интерфейс идеально подстраивается под мобильные телефоны и планшеты кладовщиков.</p>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="glass-card p-6 rounded-2xl hover:shadow-lg transition-shadow duration-300">
+                    <div class="w-10 h-10 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center mb-4">
+                        <i class="ph ph-arrows-left-right text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Управление коробками (Жизненный цикл)</h3>
+                    <ul class="text-slate-600 text-sm space-y-2">
+                        <li><i class="ph ph-check text-emerald-500 mr-1"></i> <strong>Регистрация</strong> с указанием полки размещения.</li>
+                        <li><i class="ph ph-check text-emerald-500 mr-1"></i> <strong>Перемещения</strong> с одной полки на другую в два клика.</li>
+                        <li><i class="ph ph-check text-emerald-500 mr-1"></i> <strong>Отгрузка</strong> с учетом всех отправленных коробок.</li>
+                    </ul>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="glass-card p-6 rounded-2xl hover:shadow-lg transition-shadow duration-300 gap-6">
+                    <div class="w-10 h-10 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center mb-4">
+                        <i class="ph ph-scissors text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Материалы и давальческое сырье</h3>
+                    <p class="text-slate-600 text-sm">Отдельный модуль для приема сырья от клиентов (описание, указание владельца, размещение на полке) и отслеживания его выдачи в производство.</p>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="glass-card p-6 rounded-2xl hover:shadow-lg transition-shadow duration-300">
+                    <div class="w-10 h-10 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center mb-4">
+                        <i class="ph ph-list-magnifying-glass text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Аудит и логистика (История)</h3>
+                    <p class="text-slate-600 text-sm">Система автоматически записывает "кто, что и когда сделал". Никто не сможет незаметно удалить или переместить коробку — все ходы записаны.</p>
+                </div>
+
+            </div>
+        </section>
+        
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 mt-20 p-8 text-center text-slate-500 text-sm">
+        <p>&copy; 2026 PrintLogix Warehouse OS. Презентация для руководства.</p>
+    </footer>
+
+</body>
+</html>
