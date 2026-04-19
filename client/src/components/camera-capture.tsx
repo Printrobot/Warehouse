@@ -44,7 +44,9 @@ export function CameraCapture({ onCapture, label = "Take Photo" }: CameraCapture
           ref={webcamRef}
           screenshotFormat="image/jpeg"
           className="w-full h-full object-cover"
-          videoConstraints={{ facingMode: "environment" }}
+          videoConstraints={{ facingMode: { ideal: "environment" } } as any}
+          onUserMedia={() => console.log("Camera started successfully")}
+          onUserMediaError={(err) => console.error("Camera error:", err)}
         />
       </div>
 
