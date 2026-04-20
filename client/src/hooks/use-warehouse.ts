@@ -3,7 +3,8 @@ import { api, buildUrl } from "@shared/routes";
 import { type InsertBox, type InsertMaterial } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/use-language";
-
+import type { StoreListResponse, ContainerListResponse, StockListResponse, CreateContainerParams, TransferStockParams } from "@/lib/api-types";
+import type { Box, Location } from "@shared/schema";
 // === ORDERS ===
 export function useOrders(params?: { status?: 'active' | 'completed'; search?: string }) {
   return useQuery({
@@ -143,12 +144,45 @@ export function useUpdateBox() {
 
 export function useBoxes() {
   return useQuery({
-    queryKey: [api.boxes.list.path],
+    queryKey: ['/v1/warehousing/containers-stocks'],
     queryFn: async () => {
-      const res = await fetch(api.boxes.list.path, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch boxes");
-      const json = await res.json();
-      return api.boxes.list.responses[200].parse(json);
+      // Fetch stocks
+      const stocksRes = await fetch('/v1/warehousing/stocks?limit=100');
+      if (!stocksRes.ok) throw new Error("Failed to fetch stocks");
+      const stocksData: StockListResponse = await stocksRes.json();
+
+      // Fetch containers
+      const containersRes = await fetch('/v1/warehousing/containers?limit=100');
+      if (!containersRes.ok) throw new Error("Failed to fetch containers");
+      const containersData: ContainerListResponse = await containersRes.json();
+
+      // Map to Box[]
+      const boxes: Box[] = stocksData.stocks.map((stock) => {
+        const container = containersData.containers.find(c => c.id === stock.container_id);
+        return {
+          id: stock.id,
+          orderId: (stock.id % 5) + 1, // Mock mapping to orders 1-5
+          manualOrderNumber: container?.code || null,
+          numberInOrder: "1",
+          quantity: stock.quantity || 1,
+          locationType: "permanent",
+          locationId: stock.location_id,
+          status: "in_stock",
+          description: container ? (container.tags?.join(", ") || container.code) : String(stock.id),
+          productPhotos: container?.images || [],
+          tempLocationPhoto: null,
+          tempLocationDesc: null,
+          stickerPhoto: null,
+          problemType: null,
+          problemDesc: null,
+          shippedAt: null,
+          shippedBy: null,
+          createdAt: stock.created_at ? new Date(stock.created_at) : new Date(),
+          createdBy: 1, // mock user
+        };
+      });
+
+      return boxes;
     }
   });
 }
@@ -159,16 +193,20 @@ export function useShipBox() {
 
   return useMutation({
     mutationFn: async (id: number) => {
-      const url = buildUrl(api.boxes.ship.path, { id });
-      const res = await fetch(url, {
-        method: api.boxes.ship.method,
-        credentials: "include",
+      const payload: TransferStockParams = {
+        stock_id: id,
+        quantity: 1, // Assuming full quantity or 1 for the scope
+      };
+      const res = await fetch('/v1/warehousing/stocks/transfer', {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Failed to ship box");
-      const json = await res.json();
-      return api.boxes.ship.responses[200].parse(json);
+      if (!res.ok && res.status !== 204) throw new Error("Failed to ship box");
+      return res.status === 204 ? null : res.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/v1/warehousing/containers-stocks'] });
       queryClient.invalidateQueries({ queryKey: [api.boxes.list.path] });
       queryClient.invalidateQueries({ queryKey: [api.boxes.stats.path] });
       toast({ title: "Success", description: "Box shipped successfully" });
@@ -185,17 +223,24 @@ export function useCreateBox() {
   
   return useMutation({
     mutationFn: async (data: InsertBox) => {
-      const res = await fetch(api.boxes.create.path, {
-        method: api.boxes.create.method,
+      const payload: CreateContainerParams = {
+         location_id: data.locationId!,
+         exemplar_quantity: data.quantity,
+         tags: data.description ? [data.description] : [],
+         code: data.numberInOrder?.slice(0, 8) || "B",
+         images: data.productPhotos || []
+      };
+
+      const res = await fetch('/v1/warehousing/containers', {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-        credentials: "include",
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error("Failed to create box");
-      const json = await res.json();
-      return api.boxes.create.responses[201].parse(json);
+      return res.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/v1/warehousing/containers-stocks'] });
       queryClient.invalidateQueries({ queryKey: [api.orders.list.path] });
       queryClient.invalidateQueries({ queryKey: [api.orders.get.path] }); 
       toast({ title: "Success", description: "Box registered successfully" });
@@ -237,12 +282,21 @@ export function useShippedReport(startDate: string, endDate: string) {
 // === LOCATIONS ===
 export function useLocations() {
     return useQuery({
-        queryKey: [api.locations.list.path],
+        queryKey: ['/v1/warehousing/stores'],
         queryFn: async () => {
-            const res = await fetch(api.locations.list.path, { credentials: "include" });
+            const res = await fetch('/v1/warehousing/stores?limit=100');
             if (!res.ok) throw new Error("Failed to fetch locations");
-            const json = await res.json();
-            return api.locations.list.responses[200].parse(json);
+            const data: StoreListResponse = await res.json();
+            
+            const locations: Location[] = data.stores.map((store) => ({
+              id: store.id,
+              name: store.code || `Location #${store.id}`,
+              qrUuid: String(store.id), // Fallback since real UUID might not be provided directly in Store
+              photoUrl: null,
+              isActive: store.status !== 'ARCHIVED',
+              createdAt: store.created_at ? new Date(store.created_at) : new Date(),
+            }));
+            return locations;
         }
     });
 }

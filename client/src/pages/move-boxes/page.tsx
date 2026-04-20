@@ -221,27 +221,26 @@ export default function MoveBoxes() {
         const boxIds = boxesToMove.map((b) => b.id);
         const needsSplit = group.count < group.boxes.length;
 
-        const body: Record<string, unknown> = {
-          boxIds,
-          locationId: resolvedNewLocation.id,
-        };
-
-        if (needsSplit) {
-          body.newOrderNumber = `${selectedOrder!.number}-${splitIdx}`;
-          body.splitFromOrderId = selectedOrderId;
-          splitIdx++;
+        for (const stockId of boxIds) {
+          const payload = {
+            stock_id: stockId,
+            location_id: resolvedNewLocation.id,
+            quantity: 1, // Representing the full stock of that container
+          };
+          const res = await fetch('/v1/warehousing/stocks/move', {
+            method: 'POST',
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(()=>({}));
+            throw new Error(err.message || "Ошибка перемещения");
+          }
+          totalMoved++;
         }
-
-        const res = await apiRequest("POST", "/api/boxes/move", body);
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.message || "Ошибка перемещения");
-        }
-        const data = await res.json();
-        totalMoved += data.moved ?? 0;
       }
 
-      await queryClient.invalidateQueries({ queryKey: ["/api/boxes"] });
+      await queryClient.invalidateQueries({ queryKey: ['/v1/warehousing/containers-stocks'] });
       await queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
 
       setMovedCount(totalMoved);

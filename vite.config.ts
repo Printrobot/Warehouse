@@ -36,5 +36,11 @@ export default defineConfig({
       strict: true,
       deny: ["**/.*"],
     },
+    proxy: {
+      "/v1": {
+        target: "http://api.print-shop.local/user",
+        changeOrigin: true,
+      },
+    },
   },
 });
