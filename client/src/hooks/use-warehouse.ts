@@ -4,7 +4,7 @@ import { type InsertBox, type InsertMaterial } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/use-language";
 import type { StoreListResponse, ContainerListResponse, StockListResponse, CreateContainerParams, TransferStockParams } from "@/lib/api-types";
-import type { Box, Location } from "@shared/schema";
+import type { Box, Location, InsertLocation } from "@shared/schema";
 // === ORDERS ===
 export function useOrders(params?: { status?: 'active' | 'completed'; search?: string }) {
   return useQuery({
@@ -282,21 +282,88 @@ export function useShippedReport(startDate: string, endDate: string) {
 // === LOCATIONS ===
 export function useLocations() {
     return useQuery({
-        queryKey: ['/v1/warehousing/stores'],
+        queryKey: [api.locations.list.path],
         queryFn: async () => {
-            const res = await fetch('/v1/warehousing/stores?limit=100');
+            const res = await fetch(api.locations.list.path, { credentials: "include" });
             if (!res.ok) throw new Error("Failed to fetch locations");
-            const data: StoreListResponse = await res.json();
-            
-            const locations: Location[] = data.stores.map((store) => ({
-              id: store.id,
-              name: store.code || `Location #${store.id}`,
-              qrUuid: String(store.id), // Fallback since real UUID might not be provided directly in Store
-              photoUrl: null,
-              isActive: store.status !== 'ARCHIVED',
-              createdAt: store.created_at ? new Date(store.created_at) : new Date(),
-            }));
-            return locations;
+            return api.locations.list.responses[200].parse(await res.json());
+        }
+    });
+}
+
+export function useCreateLocation() {
+    const queryClient = useQueryClient();
+    const { toast } = useToast();
+
+    return useMutation({
+        mutationFn: async (data: InsertLocation) => {
+            const res = await fetch(api.locations.create.path, {
+                method: api.locations.create.method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+                credentials: "include",
+            });
+            if (!res.ok) throw new Error("Failed to create location");
+            const json = await res.json();
+            return api.locations.create.responses[201].parse(json);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [api.locations.list.path] });
+            toast({ title: "Success", description: "Storage place created" });
+        },
+        onError: (err) => {
+            toast({ title: "Error", description: err.message, variant: "destructive" });
+        }
+    });
+}
+
+export function useUpdateLocation() {
+    const queryClient = useQueryClient();
+    const { toast } = useToast();
+
+    return useMutation({
+        mutationFn: async ({ id, data }: { id: number, data: Partial<InsertLocation> }) => {
+            const url = buildUrl(api.locations.update.path, { id });
+            const res = await fetch(url, {
+                method: api.locations.update.method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+                credentials: "include",
+            });
+            if (!res.ok) throw new Error("Failed to update location");
+            const json = await res.json();
+            return api.locations.update.responses[200].parse(json);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [api.locations.list.path] });
+            toast({ title: "Success", description: "Storage place updated" });
+        },
+        onError: (err) => {
+            toast({ title: "Error", description: err.message, variant: "destructive" });
+        }
+    });
+}
+
+export function useDeleteLocation() {
+    const queryClient = useQueryClient();
+    const { toast } = useToast();
+
+    return useMutation({
+        mutationFn: async (id: number) => {
+            const url = buildUrl(api.locations.delete.path, { id });
+            const res = await fetch(url, {
+                method: api.locations.delete.method,
+                credentials: "include",
+            });
+            if (!res.ok) throw new Error("Failed to delete location");
+            return await res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [api.locations.list.path] });
+            toast({ title: "Success", description: "Storage place deleted" });
+        },
+        onError: (err) => {
+            toast({ title: "Error", description: err.message, variant: "destructive" });
         }
     });
 }

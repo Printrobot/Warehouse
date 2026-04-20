@@ -10,7 +10,8 @@ import {
   Truck, 
   Users,
   History,
-  ArrowRightLeft
+  ArrowRightLeft,
+  MapPin
 } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -37,6 +38,7 @@ export function LayoutShell({ children }: LayoutShellProps) {
     { name: t("nav.materials"), href: "/materials", icon: Box },
     { name: t("nav.orders"), href: "/orders-list", icon: Package },
     { name: t("nav.move_boxes"), href: "/move-boxes", icon: ArrowRightLeft },
+    { name: t("nav.locations") || "Места на складе", href: "/management/locations", icon: MapPin },
     ...(isAdmin ? [
       { name: t("nav.analytics"), href: "/orders", icon: LayoutDashboard },
       { name: t("nav.users"), href: "/users", icon: Users },
