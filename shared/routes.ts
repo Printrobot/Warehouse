@@ -199,6 +199,23 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/locations/:id' as const,
+      input: insertLocationSchema.partial(),
+      responses: {
+        200: z.custom<typeof locations.$inferSelect>(),
+        404: errorSchemas.notFound,
+      },
+    },
+    delete: {
+      method: 'DELETE' as const,
+      path: '/api/locations/:id' as const,
+      responses: {
+        200: z.object({ success: z.boolean() }),
+        404: errorSchemas.notFound,
+      },
+    },
   },
 
   // === AUDIT ===

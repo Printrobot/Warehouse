@@ -37,6 +37,8 @@ export interface IStorage {
   getLocations(): Promise<Location[]>;
   getLocationByQr(uuid: string): Promise<Location | undefined>;
   createLocation(location: Partial<Location>): Promise<Location>;
+  updateLocation(id: number, updates: Partial<Location>): Promise<Location>;
+  deleteLocation(id: number): Promise<void>;
 
   // Audit
   createAuditLog(log: Partial<AuditLog>): Promise<AuditLog>;
@@ -202,6 +204,15 @@ export class DatabaseStorage implements IStorage {
   async createLocation(location: Partial<Location>): Promise<Location> {
     const [loc] = await db.insert(locations).values(location as any).returning();
     return loc;
+  }
+
+  async updateLocation(id: number, updates: Partial<Location>): Promise<Location> {
+    const [loc] = await db.update(locations).set(updates).where(eq(locations.id, id)).returning();
+    return loc;
+  }
+
+  async deleteLocation(id: number): Promise<void> {
+    await db.delete(locations).where(eq(locations.id, id));
   }
 
   // === AUDIT ===

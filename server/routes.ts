@@ -255,6 +255,27 @@ export async function registerRoutes(
     }
   });
 
+  app.patch(api.locations.update.path, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const input = api.locations.update.input.parse(req.body);
+      const loc = await storage.updateLocation(id, input);
+      res.json(loc);
+    } catch (e) {
+      res.status(400).json({ message: "Invalid input" });
+    }
+  });
+
+  app.delete(api.locations.delete.path, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteLocation(id);
+      res.json({ success: true });
+    } catch (e) {
+      res.status(404).json({ message: "Location not found" });
+    }
+  });
+
   // === AUDIT ===
   app.get(api.audit.list.path, async (req, res) => {
     const logs = await storage.getAuditLogs();

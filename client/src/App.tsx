@@ -20,6 +20,7 @@ import SettingsPage from "@/pages/settings/page";
 import AuditLog from "@/pages/audit-log";
 import ShippedReport from "@/pages/reports/shipped";
 import MoveBoxes from "@/pages/move-boxes/page";
+import LocationsManagement from "@/pages/management/locations-management";
 import { LayoutShell } from "@/components/layout-shell";
 
 // Protected Route Wrapper
@@ -101,6 +102,10 @@ function Router() {
 
       <Route path="/move-boxes">
         <ProtectedRoute component={MoveBoxes} />
+      </Route>
+
+      <Route path="/management/locations">
+        <ProtectedRoute component={LocationsManagement} />
       </Route>
 
       {/* Fallback to 404 */}
